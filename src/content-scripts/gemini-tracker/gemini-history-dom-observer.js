@@ -192,22 +192,77 @@
 
     /**
      * Finds a conversation item in a mutation list.
+     * Handles both old behavior (new element added) and new behavior (element becomes visible).
      *
      * @param {MutationRecord[]} mutationsList - List of mutation records from MutationObserver
      * @returns {Element|null} - The found conversation item element or null if not found
      */
     findConversationItemInMutations: function (mutationsList) {
       for (const mutation of mutationsList) {
+        // Check for newly added conversation items
         if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
           for (const node of mutation.addedNodes) {
             if (
               node.nodeType === Node.ELEMENT_NODE &&
               node.classList.contains("conversation-items-container")
             ) {
-              const conversationItem = node.querySelector('div[data-test-id="conversation"]');
-              if (conversationItem) {
-                return conversationItem;
+              // Check for pending conversation first (indicates chat is being created)
+              const pendingConversation = node.querySelector('[data-test-id="pending-conversation"]');
+              if (pendingConversation) {
+                console.log(
+                  `${Utils.getPrefix()} Found pending-conversation element - chat creation in progress`
+                );
               }
+
+              // Look for the actual conversation item
+              const conversationItem = node.querySelector('a[data-test-id="conversation"]');
+              if (conversationItem) {
+                // Check if the conversation item is visible (not display: none)
+                const style = conversationItem.getAttribute("style") || "";
+                const isHidden = style.includes("display: none") || style.includes("display:none");
+
+                if (!isHidden) {
+                  console.log(`${Utils.getPrefix()} Found NEW visible conversation item (element added)`);
+                  return conversationItem;
+                } else {
+                  console.log(
+                    `${Utils.getPrefix()} Found conversation item but it's hidden (display: none), waiting for it to become visible...`
+                  );
+                  // Update status to show we're waiting for the item to become visible
+                  const StatusIndicator = window.GeminiHistory_StatusIndicator;
+                  if (StatusIndicator && pendingConversation) {
+                    StatusIndicator.show("Chat creation detected, waiting for response...", "loading", 0);
+                  }
+                  // Don't return it yet - wait for style change
+                }
+              }
+            }
+
+            // Also check if the added node itself is a conversation item
+            if (node.nodeType === Node.ELEMENT_NODE && node.getAttribute("data-test-id") === "conversation") {
+              console.log(`${Utils.getPrefix()} Found NEW conversation item directly (old behavior)`);
+              return node;
+            }
+          }
+        }
+
+        // NEW BEHAVIOR: Check for style attribute changes (display: none → visible)
+        if (mutation.type === "attributes" && mutation.attributeName === "style") {
+          const target = mutation.target;
+          if (
+            target.nodeType === Node.ELEMENT_NODE &&
+            target.getAttribute("data-test-id") === "conversation" &&
+            target.tagName.toLowerCase() === "a"
+          ) {
+            // Check if element is now visible (not display: none)
+            const style = target.getAttribute("style") || "";
+            const isVisible = !style.includes("display: none");
+
+            if (isVisible) {
+              console.log(
+                `${Utils.getPrefix()} Found conversation item becoming visible (new behavior - style change)`
+              );
+              return target;
             }
           }
         }
@@ -418,6 +473,8 @@
       STATE.conversationListObserver.observe(conversationListElement, {
         childList: true,
         subtree: true,
+        attributes: true, // Watch for attribute changes (e.g., style changes)
+        attributeFilter: ["style"], // Only watch style attribute for performance
       });
       console.log(`${Utils.getPrefix()} MAIN conversation list observer is now active.`);
     },
