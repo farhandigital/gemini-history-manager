@@ -70,7 +70,7 @@ import { ref, defineProps, defineEmits, onMounted, watch, onUnmounted } from "vu
 /**
  * Import the Logger utility.
  */
-import { Logger } from "../../lib/utils.js";
+import { Logger } from "@/lib/utils.js";
 
 /**
  * Define the props accepted by the DashboardHeader component.

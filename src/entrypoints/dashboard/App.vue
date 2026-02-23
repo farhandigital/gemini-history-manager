@@ -166,7 +166,7 @@ import {
   toggleTheme,
   updateThemeToggleIcon,
   THEME_STORAGE_KEY,
-} from "../lib/utils.js";
+} from "@/lib/utils.js";
 
 // Import helper modules
 import {

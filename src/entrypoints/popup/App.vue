@@ -54,7 +54,7 @@ import {
   initDayjsPlugins,
   updateThemeToggleIcon,
   THEME_STORAGE_KEY,
-} from "../lib/utils.js";
+} from "@/lib/utils.js";
 
 // Import components
 import Header from "./components/Header.vue";
@@ -354,7 +354,7 @@ function handleOpenFullPage() {
       Logger.error("App", "Error sending message to open history page", error);
       // Try alternative method to open the page
       browser.tabs
-        .create({ url: browser.runtime.getURL("dashboard/dashboard.html") })
+        .create({ url: browser.runtime.getURL("dashboard.html") })
         .then(() => window.close())
         .catch((err) => Logger.error("App", "Failed to open dashboard page via tabs API", err));
     });
@@ -412,7 +412,7 @@ function handleImportHistory() {
   Logger.log("App", "Import history button clicked", { redirectTarget: "dashboard" });
   browser.tabs
     .create({
-      url: browser.runtime.getURL("dashboard/dashboard.html?action=import"),
+      url: browser.runtime.getURL("dashboard.html?action=import"),
     })
     .then(() => {
       Logger.debug("App", "Dashboard page opened with import action");

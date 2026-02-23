@@ -91,7 +91,7 @@
 
 <script setup>
 import { defineProps, defineEmits, onMounted, onUnmounted, ref, computed } from "vue";
-import { parseTimestamp, Logger, formatModelAndTool } from "../../lib/utils.js";
+import { parseTimestamp, Logger, formatModelAndTool } from "@/lib/utils.js";
 
 // Define props
 const props = defineProps({

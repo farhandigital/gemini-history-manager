@@ -15,7 +15,7 @@
 <script setup>
 import { defineProps, defineEmits, watch, ref, onMounted } from "vue";
 import ToastNotification from "./ToastNotification.vue";
-import { Logger } from "../../lib/utils.js";
+import { Logger } from "@/lib/utils.js";
 
 // Define props
 const props = defineProps({

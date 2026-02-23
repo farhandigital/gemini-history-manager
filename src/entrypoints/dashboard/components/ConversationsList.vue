@@ -79,9 +79,9 @@
 </template>
 
 <script setup>
-import Logger from "../../lib/logger.js";
+import Logger from "@/lib/logger.js";
 import { defineProps, defineEmits, computed } from "vue";
-import { dayjsFormatDate, formatModelAndTool } from "../../lib/utils.js";
+import { dayjsFormatDate, formatModelAndTool } from "@/lib/utils.js";
 
 // Define props
 const props = defineProps({

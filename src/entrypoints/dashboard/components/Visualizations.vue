@@ -85,7 +85,7 @@
 <script setup>
 import { ref, defineProps, defineEmits, onMounted, watch, nextTick } from "vue";
 import Chart from "chart.js/auto";
-import { Logger } from "../../lib/utils.js";
+import { Logger } from "@/lib/utils.js";
 
 // Define props
 const props = defineProps({

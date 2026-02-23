@@ -36,7 +36,7 @@
 
 <script setup>
 import { ref } from "vue";
-import { Logger } from "../../lib/utils.js";
+import { Logger } from "@/lib/utils.js";
 
 // Define refs
 const themeIconSvg = ref(null);

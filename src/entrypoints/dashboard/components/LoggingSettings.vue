@@ -90,8 +90,8 @@ import {
   setComponentLogging,
   setGlobalLogging,
   setLogLevel,
-} from "../../lib/logConfig.js";
-import { Logger } from "../../lib/utils.js";
+} from "@/lib/logConfig.js";
+import { Logger } from "@/lib/utils.js";
 
 const config = ref({
   enabled: true,

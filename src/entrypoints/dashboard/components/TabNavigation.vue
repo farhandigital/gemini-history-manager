@@ -14,7 +14,7 @@
 
 <script setup>
 import { defineProps, defineEmits, onMounted, watch } from "vue";
-import { Logger } from "../../lib/utils.js";
+import { Logger } from "@/lib/utils.js";
 
 // Define props
 const props = defineProps({

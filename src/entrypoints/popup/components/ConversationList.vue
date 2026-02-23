@@ -26,7 +26,7 @@
 
 <script setup>
 import { defineProps, defineEmits } from "vue";
-import { Logger, parseTimestamp, formatDateForDisplay, formatModelAndTool } from "../../lib/utils.js";
+import { Logger, parseTimestamp, formatDateForDisplay, formatModelAndTool } from "@/lib/utils.js";
 
 // Define props
 const props = defineProps({
