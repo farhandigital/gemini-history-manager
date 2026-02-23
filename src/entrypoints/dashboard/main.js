@@ -4,7 +4,7 @@
  */
 
 // Import theme initialization utility
-import { initializeTheme, Logger, THEME_STORAGE_KEY } from "../lib/utils.js";
+import { initializeTheme, Logger, THEME_STORAGE_KEY } from "@/lib/utils.js";
 
 // Apply theme immediately before any rendering or Vue initialization
 // This prevents any flash of unthemed content
@@ -26,7 +26,6 @@ import { initializeTheme, Logger, THEME_STORAGE_KEY } from "../lib/utils.js";
   Logger.debug("main.js", `Dashboard initialized with theme: ${appliedTheme}`);
 })();
 
-import "../lib/polyfill.js"; // Browser compatibility polyfill
 import { createApp } from "vue"; // Import createApp function from Vue
 import App from "./App.vue"; // Import the root Vue component for the dashboard
 

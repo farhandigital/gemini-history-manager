@@ -2,7 +2,7 @@
  * Gemini History Manager - Dashboard Data Helpers
  * Functions for data management in the Dashboard
  */
-import { Logger, parseTimestamp } from "../../lib/utils.js";
+import { Logger, parseTimestamp } from "@/lib/utils.js";
 import dayjs from "dayjs";
 import { createSearchIndex, searchHistory } from "./searchHelpers.js";
 import isBetween from "dayjs/plugin/isBetween";

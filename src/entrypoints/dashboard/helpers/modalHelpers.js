@@ -2,7 +2,7 @@
  * Gemini History Manager - Dashboard Modal Helpers
  * Helper functions for modals and dialogs in the Dashboard
  */
-import { Logger } from "../../lib/utils.js";
+import { Logger } from "@/lib/utils.js";
 import { ref } from "vue";
 
 /**

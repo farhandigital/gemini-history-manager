@@ -4,7 +4,7 @@
  */
 import dayjs from "dayjs";
 import { reactive } from "vue";
-import { Logger } from "../../lib/utils.js";
+import { Logger } from "@/lib/utils.js";
 
 /**
  * Create and manage toast notifications

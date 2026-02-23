@@ -2,7 +2,7 @@
  * Gemini History Manager - Plan Distribution Chart
  * Function for plan distribution visualization in the Dashboard
  */
-import { Logger } from "../../lib/utils.js";
+import { Logger } from "@/lib/utils.js";
 import { getChartJsThemeOptions, getPlanColor } from "./chartHelpers.js";
 
 /**

@@ -2,7 +2,7 @@
  * Gemini History Manager - Dashboard Chart Helpers
  * Functions for chart visualization in the Dashboard
  */
-import { parseTimestamp, Logger } from "../../lib/utils.js";
+import { parseTimestamp, Logger } from "@/lib/utils.js";
 import dayjs from "dayjs";
 
 /**

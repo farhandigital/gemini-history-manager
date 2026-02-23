@@ -3,7 +3,7 @@
  * Functions for advanced search capabilities using MiniSearch
  */
 import MiniSearch from "minisearch";
-import { Logger } from "../../lib/utils.js";
+import { Logger } from "@/lib/utils.js";
 
 /**
  * Fields to be indexed for search in MiniSearch.
