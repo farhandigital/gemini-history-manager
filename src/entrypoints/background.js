@@ -93,7 +93,7 @@ export default defineBackground(() => {
         Logger.log("background", "Opening dashboard/history page in new tab");
         browser.tabs
           .create({
-            url: "/dashboard/index.html",
+            url: "/dashboard.html",
           })
           .then((tab) => {
             Logger.debug("background", `Dashboard opened in tab ID: ${tab.id}`);
