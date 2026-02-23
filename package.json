@@ -31,6 +31,7 @@
   "license": "GPL-3.0",
   "private": true,
   "devDependencies": {
+    "@wxt-dev/auto-icons": "^1.1.1",
     "@wxt-dev/module-vue": "^1.0.3",
     "fs-extra": "^11.1.0",
     "glob": "^11.0.2",
