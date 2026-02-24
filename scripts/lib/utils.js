@@ -14,13 +14,10 @@ export const ROOT_DIR = path.resolve(__dirname, "../..");
 
 /**
  * Files that contain version information and need to be updated during releases.
+ * WXT reads the version from package.json and generates the manifests automatically,
+ * so we only need to bump these two files.
  */
-export const VERSION_FILES = [
-  "src/manifest-chrome.json",
-  "src/manifest-firefox.json",
-  "package.json",
-  "README.md",
-];
+export const VERSION_FILES = ["package.json", "README.md"];
 
 /**
  * Executes a shell command with proper error handling.
@@ -157,27 +154,4 @@ export function getCurrentVersion() {
 export function getPackageJson() {
   const packageJsonPath = path.join(ROOT_DIR, "package.json");
   return JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
-}
-
-/**
- * Clean build directories
- * @param {Object} options - Options for cleaning
- * @param {boolean} [options.includeRecords=false] - If true, also clean dist-record/
- */
-export function cleanBuildDirs(options = {}) {
-  const { includeRecords = false } = options;
-  const dirsToClean = ["dist-firefox", "dist-chrome", "dist-zip"];
-
-  if (includeRecords) {
-    dirsToClean.push("dist-record");
-  }
-
-  console.log("🧹 Cleaning build directories...");
-  dirsToClean.forEach((dir) => {
-    const dirPath = path.join(ROOT_DIR, dir);
-    if (fs.existsSync(dirPath)) {
-      fs.rmSync(dirPath, { recursive: true, force: true });
-      console.log(`  Removed ${dir}/`);
-    }
-  });
 }
