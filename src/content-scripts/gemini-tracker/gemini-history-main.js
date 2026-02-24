@@ -61,12 +61,14 @@ import { CrashDetector } from "./gemini-history-crash-detector.js";
 }
 
 /**
- * Initializes the Gemini history manager.
+ * Runs the Gemini history manager within the WXT content script context.
  * Sets up DOM observers, event listeners, and background communication.
+ * Registers ctx.onInvalidated for authoritative cleanup on extension reload/update.
  *
+ * @param {import('wxt/sandbox').ContentScriptContext} ctx - The WXT content script context.
  * @returns {void}
  */
-export function init() {
+export function init(ctx) {
   console.log(`${Utils.getPrefix()} Initializing Gemini History Manager...`);
 
   // Initialize status indicator
@@ -271,6 +273,7 @@ export function init() {
     // Check if Gemini is currently processing a new chat - if so, do NOTHING
 
     if (STATE && STATE.isNewChatPending) {
+      init;
       console.log(
         `${Utils.getPrefix()} Page visibility changed, but new chat is pending. Doing absolutely nothing to preserve chat tracking.`
       );
@@ -289,4 +292,12 @@ export function init() {
 
   // Set up crash detector
   CrashDetector.init();
+
+  // Final authoritative cleanup when WXT invalidates this content script context
+  // (e.g., extension reload, update). Complements the visibilitychange-based cleanup
+  // which handles tab hide/show cycles during normal use.
+  ctx.onInvalidated(() => {
+    console.log(`${Utils.getPrefix()} Content script context invalidated. Performing final cleanup.`);
+    DomObserver.completeCleanup();
+  });
 }
