@@ -19,7 +19,11 @@ export const MODEL_NAMES = {
  * TOOL_NAMES
  * Known tools that can be activated in the Gemini toolbox.
  * Tools run on top of a model (e.g. Deep Research, Image generation).
- * Keys are case-insensitive substring patterns; values are canonical names.
+ *
+ * Keys are plain JS strings used as substring match targets.
+ * The case-insensitive matching logic lives in the caller — see
+ * ModelDetector.normalizeTool() in model-detector.js.
+ * Values are the canonical tool names stored in history.
  */
 export const TOOL_NAMES = {
   "Deep Research": "Deep Research",

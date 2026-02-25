@@ -2,7 +2,7 @@ import { STATE } from "./state.js";
 import { Utils } from "./utils.js";
 import { StatusIndicator } from "./status-indicator.js";
 import { DomObserver } from "./observer/dom-observer.js";
-import { ERROR_PATTERNS } from "./constants.js";
+import { ERROR_PATTERNS, STATUS_TYPES } from "./constants.js";
 import { SELECTORS } from "./selectors.js";
 
 export const CrashDetector = {
@@ -164,7 +164,7 @@ export const CrashDetector = {
 
     // Perform cleanup and show error status
     DomObserver.completeCleanup();
-    StatusIndicator.show("Gemini crashed. Tracking canceled.", "error", 5000);
+    StatusIndicator.show("Gemini crashed. Tracking canceled.", STATUS_TYPES.ERROR, 5000);
 
     // Log the crash for debugging
     console.error(`${Utils.getPrefix()} Gemini crash detected and handled. Error message: "${errorMessage}"`);

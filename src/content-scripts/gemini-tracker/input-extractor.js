@@ -27,7 +27,7 @@ export const InputExtractor = {
       console.log(`${Utils.getPrefix()} Extracted prompt text: "${text}"`);
       return text;
     } else {
-      console.warn(`${Utils.getPrefix()} Could not find prompt input element ('rich-textarea .ql-editor').`);
+      console.warn(`${Utils.getPrefix()} Could not find prompt input element ('${SELECTORS.PROMPT_INPUT}').`);
       return ""; // Return empty string if not found
     }
   },

@@ -131,7 +131,7 @@ export const ModelDetector = {
    * then falls back to pillbox buttons and upgrade buttons as secondary methods.
    *
    * @param {Document} doc The document object to search within (defaults to the current document).
-   * @returns {string|null} "Gemini Pro", "Gemini Free", or null if the plan cannot be determined.
+   * @returns {string|null} GEMINI_PLANS.PRO ("Pro"), GEMINI_PLANS.FREE ("Free"), or null if the plan cannot be determined.
    */
   detectGeminiPlan: function (doc = document) {
     // --- 1. Detect "Gemini Pro" via Google logo SVG (Primary method) ---
@@ -325,7 +325,7 @@ export const ModelDetector = {
         const deepResearchButton = deepResearchIcon.closest(SELECTORS.TOOLBOX_ITEM_BUTTON_ACTIVE);
         if (deepResearchButton) {
           console.log(`${Utils.getPrefix()} Deep Research tool is activated (detected via icon)`);
-          return "Deep Research";
+          return this.normalizeTool("Deep Research");
         }
       }
 
@@ -334,7 +334,7 @@ export const ModelDetector = {
         const videoButton = videoIcon.closest(SELECTORS.TOOLBOX_ITEM_BUTTON_ACTIVE);
         if (videoButton) {
           console.log(`${Utils.getPrefix()} Video tool is activated (detected via icon)`);
-          return "Create videos";
+          return this.normalizeTool("Create videos");
         }
       }
     }
