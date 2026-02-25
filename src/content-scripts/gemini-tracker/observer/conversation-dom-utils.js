@@ -102,7 +102,7 @@ export const ConversationDomUtils = {
           target.tagName.toLowerCase() === "a"
         ) {
           const style = target.getAttribute("style") || "";
-          const isVisible = !style.includes("display: none");
+          const isVisible = !style.includes("display: none") && !style.includes("display:none");
 
           if (isVisible) {
             console.log(

@@ -203,6 +203,7 @@ export const DomObserver = {
         this.processConversationListMutations(mutationsList);
       } catch (err) {
         console.error(`${Utils.getPrefix()} Error in conversation list observer callback:`, err);
+        STATE.conversationListObserver = ObserverLifecycle.cleanupObserver(STATE.conversationListObserver);
         ObserverStateManager.resetAllPendingState();
       }
     });
@@ -229,7 +230,9 @@ export const DomObserver = {
    */
   observeTitleForItem: function (conversationItem, context) {
     if (ConversationDomUtils.shouldBailTitleObservation(context.url, conversationItem)) {
-      ObserverLifecycle.cleanupTitleObservers();
+      // No title observers exist yet at this point, so cleanupTitleObservers()
+      // would be a no-op for isNewChatPending. Use the full state reset instead.
+      ObserverStateManager.resetAllPendingState();
       return;
     }
 

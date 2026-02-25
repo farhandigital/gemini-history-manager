@@ -106,29 +106,36 @@ export const ConversationProcessor = {
       );
     }
 
-    const success = await HistoryManager.addHistoryEntry(
-      timestamp,
-      url,
-      title,
-      model,
-      tool,
-      prompt,
-      attachedFiles,
-      accountName,
-      accountEmail,
-      geminiPlan,
-      gemId,
-      gemName,
-      gemUrl
-    );
+    let success = false;
+    try {
+      success = await HistoryManager.addHistoryEntry(
+        timestamp,
+        url,
+        title,
+        model,
+        tool,
+        prompt,
+        attachedFiles,
+        accountName,
+        accountEmail,
+        geminiPlan,
+        gemId,
+        gemName,
+        gemUrl
+      );
 
-    if (!success) {
-      StatusIndicator.show("Chat not saved (already exists or invalid)", "error");
+      if (!success) {
+        StatusIndicator.show("Chat not saved (already exists or invalid)", "error");
+      }
+
+      return success === true;
+    } catch (err) {
+      console.error(`${Utils.getPrefix()} Error adding history entry:`, err);
+      StatusIndicator.show("Error saving chat", "error");
+      return false;
+    } finally {
+      console.log(`${Utils.getPrefix()} Chat Completed - clearing all state...`);
+      ObserverStateManager.completeCleanup();
     }
-
-    console.log(`${Utils.getPrefix()} Chat Completed - clearing all state...`);
-    ObserverStateManager.completeCleanup();
-
-    return true;
   },
 };
