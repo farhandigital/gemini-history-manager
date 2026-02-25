@@ -5,6 +5,7 @@ import { ObserverLifecycle } from "./observer-lifecycle.js";
 import { ObserverStateManager } from "./observer-state-manager.js";
 import { ConversationDomUtils } from "./conversation-dom-utils.js";
 import { ConversationProcessor } from "./conversation-processor.js";
+import { SELECTORS } from "../selectors.js";
 
 /**
  * DomObserver — Orchestration layer for new-chat tracking.
@@ -62,7 +63,7 @@ export const DomObserver = {
   observeStopButton: function (expectedUrl, onChatFinished, priorityContext) {
     console.log(`${Utils.getPrefix()} Setting up stop button observer for URL: ${expectedUrl}`);
 
-    const buttonContainer = document.querySelector(".trailing-actions-wrapper");
+    const buttonContainer = document.querySelector(SELECTORS.TRAILING_ACTIONS_WRAPPER);
 
     if (!buttonContainer) {
       console.warn(`${Utils.getPrefix()} Could not find button container for stop button observation`);
@@ -178,7 +179,7 @@ export const DomObserver = {
    * @returns {void}
    */
   observeConversationListForNewChat: function () {
-    const targetSelector = 'conversations-list[data-test-id="all-conversations"]';
+    const targetSelector = SELECTORS.CONVERSATION_LIST;
     const conversationListElement = document.querySelector(targetSelector);
 
     if (!conversationListElement) {
@@ -277,7 +278,7 @@ export const DomObserver = {
         console.log(
           `${Utils.getPrefix()} Stop button observer triggered — accepting current title even if placeholder`
         );
-        const titleElement = conversationItem.querySelector(".conversation-title");
+        const titleElement = conversationItem.querySelector(SELECTORS.CONVERSATION_TITLE);
         if (titleElement) {
           const currentTitle = titleElement.textContent.trim();
           if (currentTitle) {
@@ -296,7 +297,7 @@ export const DomObserver = {
           return;
         }
 
-        const titleElement = conversationItem.querySelector(".conversation-title");
+        const titleElement = conversationItem.querySelector(SELECTORS.CONVERSATION_TITLE);
         if (!titleElement) return;
 
         const currentTitle = titleElement.textContent.trim();
