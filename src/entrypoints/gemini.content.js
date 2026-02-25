@@ -2,7 +2,7 @@ import LogConfig from "@/lib/logConfig.js";
 import { Utils } from "../content-scripts/gemini-tracker/gemini-history-utils.js";
 import { STATE } from "../content-scripts/gemini-tracker/gemini-history-state.js";
 import { StatusIndicator } from "../content-scripts/gemini-tracker/gemini-history-status-indicator.js";
-import { DomObserver } from "../content-scripts/gemini-tracker/gemini-history-dom-observer.js";
+import { DomObserver } from "../content-scripts/gemini-tracker/observer/gemini-history-dom-observer.js";
 import { GemDetector } from "../content-scripts/gemini-tracker/gemini-history-gem-detector.js";
 import { EventHandlers } from "../content-scripts/gemini-tracker/gemini-history-event-handlers.js";
 import { CrashDetector } from "../content-scripts/gemini-tracker/gemini-history-crash-detector.js";
@@ -59,30 +59,28 @@ export default defineContentScript({
     console.log(`${Utils.getPrefix()} Initializing Gemini History Manager...`);
 
     // Initialize status indicator
-    /**
-     * Initializes the status indicator component.
-     * Displays the initial status message.
-     *
-     * @returns {void}
-     */
     StatusIndicator.init();
 
-    // Add storage event listener to detect logging config changes from other contexts
+    // ── Named handler references ─────────────────────────────────────────────
+    // All listeners are stored so ctx.onInvalidated() can remove every one of
+    // them, preventing duplicate handlers after extension reload/update.
+
     /**
      * Listens for storage events to detect logging configuration changes.
      * Invalidates the logging configuration cache when changes are detected.
      *
-     * @param {StorageEvent} event - The storage event object.
+     * @param {StorageEvent} event - The storage event.
      * @returns {void}
      */
-    window.addEventListener("storage", (event) => {
+    const storageHandler = (event) => {
       if (event.key === LogConfig.CONFIG_STORAGE_KEY) {
         console.debug(
           `${Utils.getPrefix()} [ContentScript] Logging configuration changed in localStorage, invalidating cache`
         );
         LogConfig.invalidateConfigCache();
       }
-    });
+    };
+    window.addEventListener("storage", storageHandler);
 
     // Show immediate status message that persists until conversation list is found (or timeout)
     StatusIndicator.show("Waiting for Gemini recent chats to appear...", "loading", 0);
@@ -96,17 +94,10 @@ export default defineContentScript({
       }
     }
 
-    // Monitor URL changes to detect navigation to/from Gem pages
+    // Monitor URL changes to detect navigation to/from Gem pages.
+    // Stored so we can disconnect it in ctx.onInvalidated().
     let lastUrl = window.location.href;
-    /**
-     * Observes URL changes to detect navigation to/from Gem pages.
-     * Resets the Gem detector when navigating away from a Gem page.
-     * Preserves observers during new chat creation workflows.
-     * Shows error message if user navigates away during active chat tracking.
-     *
-     * @returns {void}
-     */
-    new MutationObserver(() => {
+    const urlChangeObserver = new MutationObserver(() => {
       const currentUrl = window.location.href;
       if (currentUrl !== lastUrl) {
         console.log(`${Utils.getPrefix()} URL changed: ${lastUrl} -> ${currentUrl}`);
@@ -147,30 +138,22 @@ export default defineContentScript({
 
         lastUrl = currentUrl;
       }
-    }).observe(document, { subtree: true, childList: true });
+    });
+    urlChangeObserver.observe(document, { subtree: true, childList: true });
 
     // Watch for conversation list to appear before showing ready status
-    /**
-     * Waits for the Gemini conversation list to appear before showing the ready status.
-     * Displays a success message when the conversation list is detected.
-     *
-     * @param {HTMLElement} conversationList - The Gemini conversation list element.
-     * @returns {void}
-     */
     DomObserver.watchForConversationList(() => {
       console.log(`${Utils.getPrefix()} Conversation list confirmed available. Manager fully active.`);
       StatusIndicator.show("Gemini History Manager active", "success");
     });
 
-    // Warn user before leaving page if chat is in progress
     /**
      * Warns the user before leaving the page if a chat is currently being tracked.
-     * Prevents accidental loss of chat data due to page refresh or navigation.
      *
-     * @param {BeforeUnloadEvent} event - The beforeunload event object.
-     * @returns {string|undefined} - Warning message if chat is in progress, undefined otherwise.
+     * @param {BeforeUnloadEvent} event - The beforeunload event.
+     * @returns {string|undefined}
      */
-    window.addEventListener("beforeunload", (event) => {
+    const beforeUnloadHandler = (event) => {
       const isChatInProgress = STATE && STATE.isNewChatPending;
 
       if (isChatInProgress) {
@@ -182,30 +165,23 @@ export default defineContentScript({
         event.returnValue = warningMessage;
         return warningMessage;
       }
-    });
+    };
+    window.addEventListener("beforeunload", beforeUnloadHandler);
 
     // Attach main click listener (capture phase)
     console.log(`${Utils.getPrefix()} Attaching main click listener to document body...`);
-    /**
-     * Handles click events on the document body.
-     * Triggers the send click handler when a click event is detected.
-     *
-     * @param {MouseEvent} event - The click event object.
-     * @returns {void}
-     */
-    document.body.addEventListener("click", EventHandlers.handleSendClick.bind(EventHandlers), true);
+    const clickHandler = EventHandlers.handleSendClick.bind(EventHandlers);
+    document.body.addEventListener("click", clickHandler, true);
 
-    // Listen for messages from the popup or background
     /**
      * Handles messages received from the extension (background or popup).
-     * Processes commands and triggers appropriate actions.
      *
-     * @param {Object} message - The message object sent by the extension.
-     * @param {Object} sender - The sender of the message.
+     * @param {Object} message - The message object.
+     * @param {Object} sender - The message sender.
      * @param {Function} sendResponse - Callback to send a response.
-     * @returns {void|boolean} Return true to indicate async response.
+     * @returns {Promise|undefined}
      */
-    browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    const runtimeMessageHandler = (message, sender, sendResponse) => {
       if (message.action === "getPageInfo") {
         const url = window.location.href;
         const isGeminiChat = Utils.isValidChatUrl(url);
@@ -222,19 +198,18 @@ export default defineContentScript({
         LogConfig.invalidateConfigCache();
         return Promise.resolve({ success: true });
       }
-    });
+    };
+    browser.runtime.onMessage.addListener(runtimeMessageHandler);
 
     console.log(`${Utils.getPrefix()} Gemini History Manager initialization complete.`);
 
-    // Handle tab hide/show cycles
     /**
      * Handles page visibility changes (e.g., tab switch).
      * Completely skips all observer cleanup and re-initialization when a chat is in progress.
-     * Only processes visibility changes when no chat tracking is active.
      *
      * @returns {void}
      */
-    document.addEventListener("visibilitychange", () => {
+    const visibilityHandler = () => {
       // If a new chat is pending, do nothing — preserve tracking state
       if (STATE && STATE.isNewChatPending) {
         console.log(
@@ -250,17 +225,27 @@ export default defineContentScript({
         console.log(`${Utils.getPrefix()} Page became visible, re-initializing observers`);
         reinitializeObservers();
       }
-    });
+    };
+    document.addEventListener("visibilitychange", visibilityHandler);
 
     // Set up crash detector
     CrashDetector.init();
 
     // Final authoritative cleanup when WXT invalidates this content script context
-    // (e.g., extension reload, update). Complements the visibilitychange-based cleanup
-    // which handles tab hide/show cycles during normal use.
+    // (e.g., extension reload, update). Removes every listener and observer
+    // attached above so no duplicate handlers survive across reloads.
     ctx.onInvalidated(() => {
       console.log(`${Utils.getPrefix()} Content script context invalidated. Performing final cleanup.`);
+
+      urlChangeObserver.disconnect();
+      window.removeEventListener("storage", storageHandler);
+      window.removeEventListener("beforeunload", beforeUnloadHandler);
+      document.body.removeEventListener("click", clickHandler, true);
+      document.removeEventListener("visibilitychange", visibilityHandler);
+      browser.runtime.onMessage.removeListener(runtimeMessageHandler);
+
       DomObserver.completeCleanup();
+      CrashDetector.cleanup();
     });
   },
 });
