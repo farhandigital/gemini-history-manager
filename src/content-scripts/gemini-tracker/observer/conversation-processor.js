@@ -37,44 +37,50 @@ export const ConversationProcessor = {
    * history entry, and performs full cleanup when done.
    *
    * @param {string} title - The captured conversation title
-   * @param {string} expectedUrl - URL of the conversation
-   * @param {string} timestamp - ISO-formatted timestamp
-   * @param {string} model - Model name used
-   * @param {string|null} tool - Tool name used (if any)
-   * @param {string} prompt - User prompt text
-   * @param {Array} attachedFiles - Array of attached filenames
-   * @param {string} accountName - User's account name
-   * @param {string} accountEmail - User's account email
+   * @param {Object} context - Conversation context captured at the start of tracking
+   * @param {string} context.url - URL of the conversation
+   * @param {string} context.timestamp - ISO-formatted timestamp
+   * @param {string} context.model - Model name used
+   * @param {string|null} context.tool - Tool name used (if any)
+   * @param {string} context.prompt - User prompt text
+   * @param {Array} context.attachedFiles - Array of attached filenames
+   * @param {string} context.accountName - User's account name
+   * @param {string} context.accountEmail - User's account email
+   * @param {string|null} context.geminiPlan - Gemini plan tier
+   * @param {string|null} context.gemId - Gem ID (if applicable)
+   * @param {string|null} context.gemName - Gem name (if applicable)
+   * @param {string|null} context.gemUrl - Gem URL (if applicable)
    * @returns {Promise<boolean>} True if the entry was added, false otherwise
    */
-  processTitleAndAddHistory: async function (
-    title,
-    expectedUrl,
-    timestamp,
-    model,
-    tool,
-    prompt,
-    attachedFiles,
-    accountName,
-    accountEmail
-  ) {
+  processTitleAndAddHistory: async function (title, context) {
     if (!title) {
       return false;
     }
 
-    console.log(`${Utils.getPrefix()} Title found for ${expectedUrl}! Attempting to add history entry.`);
+    const {
+      url,
+      timestamp,
+      model,
+      tool,
+      prompt,
+      attachedFiles,
+      accountName,
+      accountEmail,
+      geminiPlan,
+      gemId,
+      gemUrl,
+    } = context;
+
+    let { gemName } = context;
+
+    console.log(`${Utils.getPrefix()} Title found for ${url}! Attempting to add history entry.`);
     ObserverLifecycle.cleanupTitleObservers();
 
-    const geminiPlan = STATE.pendingGeminiPlan;
     console.log(`${Utils.getPrefix()} Using Gemini plan: ${geminiPlan || "Unknown"}`);
 
     if (tool) {
       console.log(`${Utils.getPrefix()} Using tool: ${tool}`);
     }
-
-    const gemId = STATE.pendingGemId;
-    let gemName = STATE.pendingGemName;
-    const gemUrl = STATE.pendingGemUrl;
 
     // Last-chance gem name extraction: the user may have sent a prompt before
     // the gem info section loaded, but the response container contains the name.
@@ -102,7 +108,7 @@ export const ConversationProcessor = {
 
     const success = await HistoryManager.addHistoryEntry(
       timestamp,
-      expectedUrl,
+      url,
       title,
       model,
       tool,

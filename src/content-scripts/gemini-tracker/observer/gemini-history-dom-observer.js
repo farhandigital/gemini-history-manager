@@ -51,6 +51,9 @@ export const DomObserver = {
    * finished generating a response. Uses a 3-second grace period so that
    * title observers get priority to fire first.
    *
+   * Observer lifecycle (STATE.stopButtonObserver) is managed through
+   * ObserverLifecycle to keep all STATE mutations in one place.
+   *
    * @param {string} expectedUrl - URL this observer was created for
    * @param {Function} onChatFinished - Callback when chat generation finishes
    * @param {Object} priorityContext - Shared context object { chatFinished, titleProcessed }
@@ -66,34 +69,41 @@ export const DomObserver = {
       return;
     }
 
-    STATE.stopButtonObserver = new MutationObserver(() => {
-      if (window.location.href !== expectedUrl) {
-        console.log(`${Utils.getPrefix()} URL changed during stop button observation, cleaning up`);
-        STATE.stopButtonObserver = ObserverLifecycle.cleanupObserver(STATE.stopButtonObserver);
-        return;
-      }
+    const observer = new MutationObserver(() => {
+      try {
+        if (window.location.href !== expectedUrl) {
+          console.log(`${Utils.getPrefix()} URL changed during stop button observation, cleaning up`);
+          ObserverLifecycle.cleanupTitleObservers();
+          return;
+        }
 
-      if (!ConversationDomUtils.isStopButtonVisible()) {
-        console.log(`${Utils.getPrefix()} Stop button disappeared - chat generation likely finished`);
-        priorityContext.chatFinished = true;
+        if (!ConversationDomUtils.isStopButtonVisible()) {
+          console.log(`${Utils.getPrefix()} Stop button disappeared - chat generation likely finished`);
+          priorityContext.chatFinished = true;
 
-        // Give title observers 3 seconds to respond before taking over
-        setTimeout(() => {
-          if (STATE.stopButtonObserver && !priorityContext.titleProcessed) {
-            console.log(
-              `${Utils.getPrefix()} Title observers didn't respond within 3 seconds, stop button observer taking over`
-            );
-            onChatFinished();
-          } else if (priorityContext.titleProcessed) {
-            console.log(
-              `${Utils.getPrefix()} Title observers already processed the title, stop button observer backing off`
-            );
-          }
-        }, 3000);
+          // Give title observers 3 seconds to respond before taking over
+          setTimeout(() => {
+            if (STATE.stopButtonObserver && !priorityContext.titleProcessed) {
+              console.log(
+                `${Utils.getPrefix()} Title observers didn't respond within 3 seconds, stop button observer taking over`
+              );
+              onChatFinished();
+            } else if (priorityContext.titleProcessed) {
+              console.log(
+                `${Utils.getPrefix()} Title observers already processed the title, stop button observer backing off`
+              );
+            }
+          }, 3000);
+        }
+      } catch (err) {
+        console.error(`${Utils.getPrefix()} Error in stop button observer callback:`, err);
+        ObserverLifecycle.cleanupTitleObservers();
       }
     });
 
-    STATE.stopButtonObserver.observe(buttonContainer, {
+    // Register through STATE so ObserverLifecycle can manage its lifecycle
+    STATE.stopButtonObserver = observer;
+    observer.observe(buttonContainer, {
       childList: true,
       attributes: true,
       subtree: true,
@@ -140,7 +150,8 @@ export const DomObserver = {
       console.log(`${Utils.getPrefix()} Found NEW conversation item. Preparing to wait for title...`);
       StatusIndicator.show("Waiting for the title to appear. Stand by...", "loading", 0);
 
-      // Capture context before disconnecting so nothing is lost
+      // Capture the full context object before disconnecting — preserves all
+      // pending state across the async title-detection phase.
       const context = ConversationProcessor.captureConversationContext();
 
       // Stage 1 complete: disconnect the main observer
@@ -152,19 +163,8 @@ export const DomObserver = {
         `${Utils.getPrefix()} Cleared pending prompt context. Waiting for title for URL: ${context.url}`
       );
 
-      // Stage 2: wait for the title
-      this.observeTitleForItem(
-        conversationItem,
-        context.url,
-        context.timestamp,
-        context.model,
-        context.tool,
-        context.prompt,
-        context.originalPrompt,
-        context.attachedFiles,
-        context.accountName,
-        context.accountEmail
-      );
+      // Stage 2: wait for the title — pass the whole context object, not individual fields
+      this.observeTitleForItem(conversationItem, context);
       return true;
     }
 
@@ -199,7 +199,12 @@ export const DomObserver = {
     ObserverLifecycle.cleanupTitleObservers();
 
     STATE.conversationListObserver = new MutationObserver((mutationsList) => {
-      this.processConversationListMutations(mutationsList);
+      try {
+        this.processConversationListMutations(mutationsList);
+      } catch (err) {
+        console.error(`${Utils.getPrefix()} Error in conversation list observer callback:`, err);
+        ObserverStateManager.resetAllPendingState();
+      }
     });
 
     STATE.conversationListObserver.observe(conversationListElement, {
@@ -218,40 +223,24 @@ export const DomObserver = {
    * priority fallback to handle placeholder titles and truncated text.
    *
    * @param {Element} conversationItem - The conversation item DOM element
-   * @param {string} expectedUrl - URL associated with this conversation
-   * @param {string} timestamp - ISO-formatted timestamp for the chat
-   * @param {string} model - Model name used
-   * @param {string|null} tool - Tool name used (if any)
-   * @param {string} prompt - User prompt text
-   * @param {string} originalPrompt - Unmodified original prompt (for comparison)
-   * @param {Array} attachedFiles - Array of attached filenames
-   * @param {string} accountName - User's account name
-   * @param {string} accountEmail - User's account email
+   * @param {Object} context - Full conversation context captured at tracking start.
+   *   See ConversationProcessor.captureConversationContext for the shape.
    * @returns {void}
    */
-  observeTitleForItem: function (
-    conversationItem,
-    expectedUrl,
-    timestamp,
-    model,
-    tool,
-    prompt,
-    originalPrompt,
-    attachedFiles,
-    accountName,
-    accountEmail
-  ) {
-    if (ConversationDomUtils.shouldBailTitleObservation(expectedUrl, conversationItem)) {
+  observeTitleForItem: function (conversationItem, context) {
+    if (ConversationDomUtils.shouldBailTitleObservation(context.url, conversationItem)) {
       ObserverLifecycle.cleanupTitleObservers();
       return;
     }
 
     console.log(
-      `${Utils.getPrefix()} TITLE Check (URL: ${expectedUrl}): Setting up observers to wait for title`
+      `${Utils.getPrefix()} TITLE Check (URL: ${context.url}): Setting up observers to wait for title`
     );
 
-    // Shared context between title observers and the stop-button observer to
-    // prevent double-processing the title.
+    // Shared flag object between title observers and the stop-button observer to
+    // prevent double-processing the title. One plain object per tracking session —
+    // safe because observeTitleForItem is only ever called after the conversation
+    // list observer has been disconnected, making concurrent sessions impossible.
     const priorityContext = {
       chatFinished: false,
       titleProcessed: false,
@@ -275,22 +264,12 @@ export const DomObserver = {
       console.log(`${Utils.getPrefix()} Processing title from ${source}: "${title}"`);
 
       ObserverLifecycle.cleanupTitleObservers();
-      ConversationProcessor.processTitleAndAddHistory(
-        title,
-        expectedUrl,
-        timestamp,
-        model,
-        tool,
-        prompt,
-        attachedFiles,
-        accountName,
-        accountEmail
-      );
+      ConversationProcessor.processTitleAndAddHistory(title, context);
     };
 
     // Stop button observer: fallback if title observers don't fire within 3s
     this.observeStopButton(
-      expectedUrl,
+      context.url,
       () => {
         console.log(
           `${Utils.getPrefix()} Stop button observer triggered — accepting current title even if placeholder`
@@ -308,77 +287,89 @@ export const DomObserver = {
 
     // Primary title observer: watches broad mutations on the conversation item
     STATE.titleObserver = new MutationObserver(() => {
-      if (ConversationDomUtils.shouldBailTitleObservation(expectedUrl, conversationItem)) {
-        ObserverLifecycle.cleanupTitleObservers();
-        return;
-      }
-
-      const titleElement = conversationItem.querySelector(".conversation-title");
-      if (!titleElement) return;
-
-      const currentTitle = titleElement.textContent.trim();
-      const placeholderPrompt = prompt;
-
-      const looksLikePlaceholder =
-        !currentTitle ||
-        (placeholderPrompt && currentTitle === placeholderPrompt) ||
-        (placeholderPrompt &&
-          Utils.isTruncatedVersionEnhanced(placeholderPrompt, currentTitle, originalPrompt));
-
-      if (!priorityContext.chatFinished && looksLikePlaceholder) {
-        // Set up secondary observer once to watch for the real title
-        if (!STATE.secondaryTitleObserver) {
-          console.log(`${Utils.getPrefix()} Setting up secondary observer to wait for real title change...`);
-
-          const titleToWaitFor = currentTitle || "";
-
-          // Secondary title observer: watches fine-grained text changes on the title element
-          STATE.secondaryTitleObserver = new MutationObserver(() => {
-            if (
-              ConversationDomUtils.shouldBailTitleObservation(expectedUrl, conversationItem, titleElement)
-            ) {
-              ObserverLifecycle.cleanupTitleObservers();
-              return;
-            }
-
-            const newTitle = titleElement.textContent.trim();
-
-            if (priorityContext.chatFinished && newTitle) {
-              processTitle(newTitle, "secondary observer (chat finished)");
-              return;
-            }
-
-            const isNotPlaceholder = !placeholderPrompt || newTitle !== placeholderPrompt;
-            const isNotTruncated =
-              !placeholderPrompt ||
-              !Utils.isTruncatedVersionEnhanced(placeholderPrompt, newTitle, originalPrompt);
-            const isDifferentFromWaiting = newTitle !== titleToWaitFor;
-
-            if (newTitle && isNotPlaceholder && isNotTruncated && isDifferentFromWaiting) {
-              processTitle(newTitle, "secondary observer (real title)");
-            } else if (
-              placeholderPrompt &&
-              Utils.isTruncatedVersionEnhanced(placeholderPrompt, newTitle, originalPrompt)
-            ) {
-              console.log(
-                `${Utils.getPrefix()} Secondary observer: Detected truncated title "${newTitle}", waiting for full title...`
-              );
-            }
-          });
-
-          STATE.secondaryTitleObserver.observe(titleElement, {
-            childList: true,
-            characterData: true,
-            subtree: true,
-          });
+      try {
+        if (ConversationDomUtils.shouldBailTitleObservation(context.url, conversationItem)) {
+          ObserverLifecycle.cleanupTitleObservers();
+          return;
         }
-        return; // Keep waiting for the real title
-      }
 
-      if (priorityContext.chatFinished && currentTitle) {
-        processTitle(currentTitle, "primary observer (chat finished)");
-      } else if (!priorityContext.chatFinished) {
-        processTitle(currentTitle, "primary observer (real title)");
+        const titleElement = conversationItem.querySelector(".conversation-title");
+        if (!titleElement) return;
+
+        const currentTitle = titleElement.textContent.trim();
+        const placeholderPrompt = context.prompt;
+
+        const looksLikePlaceholder =
+          !currentTitle ||
+          (placeholderPrompt && currentTitle === placeholderPrompt) ||
+          (placeholderPrompt &&
+            Utils.isTruncatedVersionEnhanced(placeholderPrompt, currentTitle, context.originalPrompt));
+
+        if (!priorityContext.chatFinished && looksLikePlaceholder) {
+          // Set up secondary observer once to watch for the real title
+          if (!STATE.secondaryTitleObserver) {
+            console.log(
+              `${Utils.getPrefix()} Setting up secondary observer to wait for real title change...`
+            );
+
+            const titleToWaitFor = currentTitle || "";
+
+            // Secondary title observer: watches fine-grained text changes on the title element
+            STATE.secondaryTitleObserver = new MutationObserver(() => {
+              try {
+                if (
+                  ConversationDomUtils.shouldBailTitleObservation(context.url, conversationItem, titleElement)
+                ) {
+                  ObserverLifecycle.cleanupTitleObservers();
+                  return;
+                }
+
+                const newTitle = titleElement.textContent.trim();
+
+                if (priorityContext.chatFinished && newTitle) {
+                  processTitle(newTitle, "secondary observer (chat finished)");
+                  return;
+                }
+
+                const isNotPlaceholder = !placeholderPrompt || newTitle !== placeholderPrompt;
+                const isNotTruncated =
+                  !placeholderPrompt ||
+                  !Utils.isTruncatedVersionEnhanced(placeholderPrompt, newTitle, context.originalPrompt);
+                const isDifferentFromWaiting = newTitle !== titleToWaitFor;
+
+                if (newTitle && isNotPlaceholder && isNotTruncated && isDifferentFromWaiting) {
+                  processTitle(newTitle, "secondary observer (real title)");
+                } else if (
+                  placeholderPrompt &&
+                  Utils.isTruncatedVersionEnhanced(placeholderPrompt, newTitle, context.originalPrompt)
+                ) {
+                  console.log(
+                    `${Utils.getPrefix()} Secondary observer: Detected truncated title "${newTitle}", waiting for full title...`
+                  );
+                }
+              } catch (err) {
+                console.error(`${Utils.getPrefix()} Error in secondary title observer callback:`, err);
+                ObserverLifecycle.cleanupTitleObservers();
+              }
+            });
+
+            STATE.secondaryTitleObserver.observe(titleElement, {
+              childList: true,
+              characterData: true,
+              subtree: true,
+            });
+          }
+          return; // Keep waiting for the real title
+        }
+
+        if (priorityContext.chatFinished && currentTitle) {
+          processTitle(currentTitle, "primary observer (chat finished)");
+        } else if (!priorityContext.chatFinished) {
+          processTitle(currentTitle, "primary observer (real title)");
+        }
+      } catch (err) {
+        console.error(`${Utils.getPrefix()} Error in primary title observer callback:`, err);
+        ObserverLifecycle.cleanupTitleObservers();
       }
     });
 
@@ -390,6 +381,6 @@ export const DomObserver = {
       attributeOldValue: true,
     });
 
-    console.log(`${Utils.getPrefix()} TITLE observer active for URL: ${expectedUrl}`);
+    console.log(`${Utils.getPrefix()} TITLE observer active for URL: ${context.url}`);
   },
 };
