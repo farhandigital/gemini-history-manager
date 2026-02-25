@@ -2,6 +2,7 @@ import { STATE } from "./state.js";
 import { Utils } from "./utils.js";
 import { StatusIndicator } from "./status-indicator.js";
 import { DomObserver } from "./observer/dom-observer.js";
+import { ERROR_PATTERNS } from "./constants.js";
 
 export const CrashDetector = {
   // Track initialization state
@@ -137,9 +138,7 @@ export const CrashDetector = {
    * @returns {boolean} - True if the text indicates an error, false otherwise
    */
   isErrorMessage: function (text) {
-    const errorPatterns = ["went wrong", "try again"];
-
-    return errorPatterns.some((pattern) => text.includes(pattern));
+    return ERROR_PATTERNS.some((pattern) => text.includes(pattern));
   },
 
   /**
