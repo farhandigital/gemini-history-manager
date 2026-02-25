@@ -3,6 +3,7 @@ import { Utils } from "./utils.js";
 import { StatusIndicator } from "./status-indicator.js";
 import { DomObserver } from "./observer/dom-observer.js";
 import { ERROR_PATTERNS } from "./constants.js";
+import { SELECTORS } from "./selectors.js";
 
 export const CrashDetector = {
   // Track initialization state
@@ -26,7 +27,7 @@ export const CrashDetector = {
     console.log(`${Utils.getPrefix()} Setting up Gemini crash detector...`);
 
     // Find or wait for the overlay container
-    const overlayContainer = document.querySelector(".cdk-overlay-container");
+    const overlayContainer = document.querySelector(SELECTORS.OVERLAY_CONTAINER);
 
     if (!overlayContainer) {
       console.log(
@@ -61,7 +62,7 @@ export const CrashDetector = {
     this.containerObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
-          if (node.nodeType === Node.ELEMENT_NODE && node.classList?.contains("cdk-overlay-container")) {
+          if (node.nodeType === Node.ELEMENT_NODE && node.matches(SELECTORS.OVERLAY_CONTAINER)) {
             console.log(`${Utils.getPrefix()} Overlay container appeared, setting up crash detector`);
             this.containerObserver.disconnect();
             this.containerObserver = null;
@@ -96,7 +97,10 @@ export const CrashDetector = {
     this.crashObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
-          if (node.nodeType === Node.ELEMENT_NODE && node.tagName?.toLowerCase() === "simple-snack-bar") {
+          if (
+            node.nodeType === Node.ELEMENT_NODE &&
+            node.tagName?.toLowerCase() === SELECTORS.SNACK_BAR_TAG
+          ) {
             this.handleSnackBarDetected(node);
           }
         }

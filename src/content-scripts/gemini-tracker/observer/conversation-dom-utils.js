@@ -1,5 +1,6 @@
 import { Utils } from "../utils.js";
 import { StatusIndicator } from "../status-indicator.js";
+import { SELECTORS, ARIA_LABELS } from "../selectors.js";
 
 export const ConversationDomUtils = {
   /**
@@ -38,10 +39,10 @@ export const ConversationDomUtils = {
    * @returns {boolean} True if the stop button is visible, false otherwise
    */
   isStopButtonVisible: function () {
-    const stopButton = document.querySelector("button.send-button.stop");
+    const stopButton = document.querySelector(SELECTORS.STOP_BUTTON);
     if (stopButton) {
-      const stopIcon = stopButton.querySelector(".stop-icon");
-      return stopIcon && stopButton.getAttribute("aria-label") === "Stop response";
+      const stopIcon = stopButton.querySelector(SELECTORS.STOP_ICON);
+      return stopIcon && stopButton.getAttribute("aria-label") === ARIA_LABELS.STOP_RESPONSE;
     }
     return false;
   },
@@ -57,18 +58,15 @@ export const ConversationDomUtils = {
     for (const mutation of mutationsList) {
       if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
         for (const node of mutation.addedNodes) {
-          if (
-            node.nodeType === Node.ELEMENT_NODE &&
-            node.classList.contains("conversation-items-container")
-          ) {
-            const pendingConversation = node.querySelector('[data-test-id="pending-conversation"]');
+          if (node.nodeType === Node.ELEMENT_NODE && node.matches(SELECTORS.CONVERSATION_ITEMS_CONTAINER)) {
+            const pendingConversation = node.querySelector(SELECTORS.PENDING_CONVERSATION);
             if (pendingConversation) {
               console.log(
                 `${Utils.getPrefix()} Found pending-conversation element - chat creation in progress`
               );
             }
 
-            const conversationItem = node.querySelector('a[data-test-id="conversation"]');
+            const conversationItem = node.querySelector(SELECTORS.CONVERSATION_ITEM);
             if (conversationItem) {
               const style = conversationItem.getAttribute("style") || "";
               const isHidden = style.includes("display: none") || style.includes("display:none");
@@ -87,7 +85,7 @@ export const ConversationDomUtils = {
             }
           }
 
-          if (node.nodeType === Node.ELEMENT_NODE && node.getAttribute("data-test-id") === "conversation") {
+          if (node.nodeType === Node.ELEMENT_NODE && node.matches(SELECTORS.CONVERSATION_ITEM)) {
             console.log(`${Utils.getPrefix()} Found NEW conversation item directly (old behavior)`);
             return node;
           }
@@ -96,11 +94,7 @@ export const ConversationDomUtils = {
 
       if (mutation.type === "attributes" && mutation.attributeName === "style") {
         const target = mutation.target;
-        if (
-          target.nodeType === Node.ELEMENT_NODE &&
-          target.getAttribute("data-test-id") === "conversation" &&
-          target.tagName.toLowerCase() === "a"
-        ) {
+        if (target.nodeType === Node.ELEMENT_NODE && target.matches(SELECTORS.CONVERSATION_ITEM)) {
           const style = target.getAttribute("style") || "";
           const isVisible = !style.includes("display: none") && !style.includes("display:none");
 
@@ -128,7 +122,7 @@ export const ConversationDomUtils = {
     console.log(`${Utils.getPrefix()} Starting to watch for conversation list element...`);
     StatusIndicator.show("Looking for Gemini recent chats. Please wait...", "loading", 0);
 
-    const conversationListSelector = 'conversations-list[data-test-id="all-conversations"]';
+    const conversationListSelector = SELECTORS.CONVERSATION_LIST;
     const existingConversationList = document.querySelector(conversationListSelector);
 
     if (existingConversationList) {
