@@ -1,6 +1,6 @@
-import { STATE } from "../gemini-history-state.js";
-import { Utils } from "../gemini-history-utils.js";
-import { StatusIndicator } from "../gemini-history-status-indicator.js";
+import { STATE } from "../state.js";
+import { Utils } from "../utils.js";
+import { StatusIndicator } from "../status-indicator.js";
 import { ObserverLifecycle } from "./observer-lifecycle.js";
 import { ObserverStateManager } from "./observer-state-manager.js";
 import { ConversationDomUtils } from "./conversation-dom-utils.js";
