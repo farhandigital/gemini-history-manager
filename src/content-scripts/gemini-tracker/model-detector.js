@@ -1,5 +1,5 @@
-import { MODEL_NAMES, TOOL_NAMES } from "./gemini-history-config.js";
-import { Utils } from "./gemini-history-utils.js";
+import { MODEL_NAMES, TOOL_NAMES } from "./config.js";
+import { Utils } from "./utils.js";
 
 export const ModelDetector = {
   /**

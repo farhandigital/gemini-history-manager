@@ -1,4 +1,4 @@
-import { Utils } from "./gemini-history-utils.js";
+import { Utils } from "./utils.js";
 
 export const InputExtractor = {
   /**

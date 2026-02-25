@@ -1,6 +1,6 @@
-import { CONFIG } from "./gemini-history-config.js";
-import { Utils } from "./gemini-history-utils.js";
-import { StatusIndicator } from "./gemini-history-status-indicator.js";
+import { CONFIG } from "./config.js";
+import { Utils } from "./utils.js";
+import { StatusIndicator } from "./status-indicator.js";
 
 export const HistoryManager = {
   /**

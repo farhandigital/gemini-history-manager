@@ -1,5 +1,5 @@
-import { STATE } from "../gemini-history-state.js";
-import { Utils } from "../gemini-history-utils.js";
+import { STATE } from "../state.js";
+import { Utils } from "../utils.js";
 import { ObserverLifecycle } from "./observer-lifecycle.js";
 
 export const ObserverStateManager = {

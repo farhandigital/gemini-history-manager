@@ -1,5 +1,5 @@
-import { Utils } from "../gemini-history-utils.js";
-import { StatusIndicator } from "../gemini-history-status-indicator.js";
+import { Utils } from "../utils.js";
+import { StatusIndicator } from "../status-indicator.js";
 
 export const ConversationDomUtils = {
   /**

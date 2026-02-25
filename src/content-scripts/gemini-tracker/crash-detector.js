@@ -1,7 +1,7 @@
-import { STATE } from "./gemini-history-state.js";
-import { Utils } from "./gemini-history-utils.js";
-import { StatusIndicator } from "./gemini-history-status-indicator.js";
-import { DomObserver } from "./observer/gemini-history-dom-observer.js";
+import { STATE } from "./state.js";
+import { Utils } from "./utils.js";
+import { StatusIndicator } from "./status-indicator.js";
+import { DomObserver } from "./observer/dom-observer.js";
 
 export const CrashDetector = {
   // Track initialization state
