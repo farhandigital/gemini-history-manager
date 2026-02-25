@@ -94,13 +94,17 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build extensions
-        run: bun run build:all
+        run: |
+          bunx wxt build -b chrome
+          bunx wxt zip -b chrome
+          bunx wxt build --mv3 -b firefox
+          bunx wxt zip --mv3 -b firefox
 
       - name: Verify build artifacts
         run: |
           VERSION="${{ needs.check-release.outputs.version }}"
-          CHROME_ZIP="dist-zip/gemini_history_manager_chrome-${VERSION}.zip"
-          FIREFOX_ZIP="dist-zip/gemini_history_manager_firefox-${VERSION}.zip"
+          CHROME_ZIP=".output/gemini-history-manager-${VERSION}-chrome.zip"
+          FIREFOX_ZIP=".output/gemini-history-manager-${VERSION}-firefox.zip"
 
           echo "Checking for build artifacts..."
 
@@ -115,7 +119,7 @@ jobs:
           fi
 
           echo "✅ Build artifacts verified:"
-          ls -la dist-zip/
+          ls -la .output/*.zip
 
       - name: Create git tag
         run: |
@@ -140,8 +144,8 @@ jobs:
         run: |
           VERSION="${{ needs.check-release.outputs.version }}"
           TAG_NAME="v${VERSION}"
-          CHROME_ZIP="dist-zip/gemini_history_manager_chrome-${VERSION}.zip"
-          FIREFOX_ZIP="dist-zip/gemini_history_manager_firefox-${VERSION}.zip"
+          CHROME_ZIP=".output/gemini-history-manager-${VERSION}-chrome.zip"
+          FIREFOX_ZIP=".output/gemini-history-manager-${VERSION}-firefox.zip"
           RELEASE_NOTES="release-notes/${TAG_NAME}.md"
 
           # Check if release already exists

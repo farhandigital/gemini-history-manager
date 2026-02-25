@@ -1,19 +1,18 @@
-(function () {
-  "use strict";
-  const Utils = window.GeminiHistory_Utils;
-  const StatusIndicator = {
-    element: null,
-    timeout: null,
-    DEFAULT_AUTO_HIDE: 3000, // Auto-hide after 3 seconds by default
+import { Utils } from "./gemini-history-utils.js";
 
-    /**
-     * Initializes the status indicator element in the DOM.
-     * Creates the HTML structure and applies styles for the indicator.
-     */
-    init: function () {
-      // Add CSS styles
-      const styleEl = document.createElement("style");
-      styleEl.textContent = `
+export const StatusIndicator = {
+  element: null,
+  timeout: null,
+  DEFAULT_AUTO_HIDE: 3000, // Auto-hide after 3 seconds by default
+
+  /**
+   * Initializes the status indicator element in the DOM.
+   * Creates the HTML structure and applies styles for the indicator.
+   */
+  init: function () {
+    // Add CSS styles
+    const styleEl = document.createElement("style");
+    styleEl.textContent = `
               .gemini-history-status {
                   position: fixed;
                   bottom: 20px;
@@ -140,121 +139,118 @@
                   to { transform: rotate(360deg); }
               }
             `;
-      document.head.appendChild(styleEl);
+    document.head.appendChild(styleEl);
 
-      // Create the indicator element
-      const indicator = document.createElement("div");
-      indicator.id = "gemini-history-status";
-      indicator.className = "gemini-history-status hidden";
+    // Create the indicator element
+    const indicator = document.createElement("div");
+    indicator.id = "gemini-history-status";
+    indicator.className = "gemini-history-status hidden";
 
-      // Create inner elements for icon and message
-      const iconContainer = document.createElement("div");
-      iconContainer.className = "status-icon";
+    // Create inner elements for icon and message
+    const iconContainer = document.createElement("div");
+    iconContainer.className = "status-icon";
 
-      const messageContainer = document.createElement("div");
-      messageContainer.className = "status-message";
+    const messageContainer = document.createElement("div");
+    messageContainer.className = "status-message";
 
-      // Append elements
-      indicator.appendChild(iconContainer);
-      indicator.appendChild(messageContainer);
-      document.body.appendChild(indicator);
+    // Append elements
+    indicator.appendChild(iconContainer);
+    indicator.appendChild(messageContainer);
+    document.body.appendChild(indicator);
 
-      this.element = indicator;
-      console.log(`${Utils.getPrefix()} Status indicator initialized`);
-    },
+    this.element = indicator;
+    console.log(`${Utils.getPrefix()} Status indicator initialized`);
+  },
 
-    /**
-     * Shows the status indicator with a message.
-     *
-     * @param {string} message - The message to display in the indicator
-     * @param {string} type - Type of status: 'info', 'success', 'warning', 'error', or 'loading'
-     * @param {number} autoHide - Time in ms after which to hide the indicator, or 0 to stay visible
-     * @returns {Object} - Returns the StatusIndicator instance for chaining
-     */
-    show: function (message, type = "info", autoHide = this.DEFAULT_AUTO_HIDE) {
-      if (!this.element) {
-        this.init();
-      }
+  /**
+   * Shows the status indicator with a message.
+   *
+   * @param {string} message - The message to display in the indicator
+   * @param {string} type - Type of status: 'info', 'success', 'warning', 'error', or 'loading'
+   * @param {number} autoHide - Time in ms after which to hide the indicator, or 0 to stay visible
+   * @returns {Object} - Returns the StatusIndicator instance for chaining
+   */
+  show: function (message, type = "info", autoHide = this.DEFAULT_AUTO_HIDE) {
+    if (!this.element) {
+      this.init();
+    }
 
-      // Clear any existing timeout
-      if (this.timeout) {
-        clearTimeout(this.timeout);
-        this.timeout = null;
-      }
+    // Clear any existing timeout
+    if (this.timeout) {
+      clearTimeout(this.timeout);
+      this.timeout = null;
+    }
 
-      // Remove hidden class and set message
-      this.element.classList.remove("hidden", "info", "success", "warning", "error", "loading");
+    // Remove hidden class and set message
+    this.element.classList.remove("hidden", "info", "success", "warning", "error", "loading");
+    this.element.classList.add(type);
+
+    const messageEl = this.element.querySelector(".status-message");
+    if (messageEl) {
+      messageEl.textContent = message;
+    }
+
+    // Auto-hide after specified delay if greater than 0
+    if (autoHide > 0) {
+      this.timeout = setTimeout(() => {
+        this.hide();
+      }, autoHide);
+    }
+
+    return this;
+  },
+
+  /**
+   * Updates the message and type of an existing indicator.
+   * Resets auto-hide timeout if specified.
+   *
+   * @param {string} message - The new message to display
+   * @param {string|null} type - New type of status, or null to keep current type
+   * @param {number} autoHide - Time in ms after which to hide the indicator, or 0 to stay visible
+   * @returns {Object} - Returns the StatusIndicator instance for chaining
+   */
+  update: function (message, type = null, autoHide = this.DEFAULT_AUTO_HIDE) {
+    if (!this.element) return this;
+
+    // Update message
+    const messageEl = this.element.querySelector(".status-message");
+    if (messageEl) {
+      messageEl.textContent = message;
+    }
+
+    // Update type if specified
+    if (type) {
+      this.element.classList.remove("info", "success", "warning", "error", "loading");
       this.element.classList.add(type);
+    }
 
-      const messageEl = this.element.querySelector(".status-message");
-      if (messageEl) {
-        messageEl.textContent = message;
-      }
+    // Reset auto-hide timeout
+    if (this.timeout) {
+      clearTimeout(this.timeout);
+      this.timeout = null;
+    }
 
-      // Auto-hide after specified delay if greater than 0
-      if (autoHide > 0) {
-        this.timeout = setTimeout(() => {
-          this.hide();
-        }, autoHide);
-      }
+    if (autoHide > 0) {
+      this.timeout = setTimeout(() => {
+        this.hide();
+      }, autoHide);
+    }
 
-      return this;
-    },
+    return this;
+  },
 
-    /**
-     * Updates the message and type of an existing indicator.
-     * Resets auto-hide timeout if specified.
-     *
-     * @param {string} message - The new message to display
-     * @param {string|null} type - New type of status, or null to keep current type
-     * @param {number} autoHide - Time in ms after which to hide the indicator, or 0 to stay visible
-     * @returns {Object} - Returns the StatusIndicator instance for chaining
-     */
-    update: function (message, type = null, autoHide = this.DEFAULT_AUTO_HIDE) {
-      if (!this.element) return this;
+  /**
+   * Hides the status indicator by adding the 'hidden' class.
+   * Clears any existing timeout.
+   */
+  hide: function () {
+    if (!this.element) return;
 
-      // Update message
-      const messageEl = this.element.querySelector(".status-message");
-      if (messageEl) {
-        messageEl.textContent = message;
-      }
+    this.element.classList.add("hidden");
 
-      // Update type if specified
-      if (type) {
-        this.element.classList.remove("info", "success", "warning", "error", "loading");
-        this.element.classList.add(type);
-      }
-
-      // Reset auto-hide timeout
-      if (this.timeout) {
-        clearTimeout(this.timeout);
-        this.timeout = null;
-      }
-
-      if (autoHide > 0) {
-        this.timeout = setTimeout(() => {
-          this.hide();
-        }, autoHide);
-      }
-
-      return this;
-    },
-
-    /**
-     * Hides the status indicator by adding the 'hidden' class.
-     * Clears any existing timeout.
-     */
-    hide: function () {
-      if (!this.element) return;
-
-      this.element.classList.add("hidden");
-
-      if (this.timeout) {
-        clearTimeout(this.timeout);
-        this.timeout = null;
-      }
-    },
-  };
-
-  window.GeminiHistory_StatusIndicator = StatusIndicator;
-})();
+    if (this.timeout) {
+      clearTimeout(this.timeout);
+      this.timeout = null;
+    }
+  },
+};

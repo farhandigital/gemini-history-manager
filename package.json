@@ -4,30 +4,20 @@
   "description": "Track and manage your Google Gemini chat history with advanced visualization and organization tools.",
   "type": "module",
   "scripts": {
-    "build": "bun run build:firefox",
-    "build:firefox": "TARGET_BROWSER=firefox vite build --outDir dist-firefox",
-    "build:chrome": "TARGET_BROWSER=chrome vite build --outDir dist-chrome",
-    "build:all": "node scripts/build-all.js",
-    "dev": "TARGET_BROWSER=firefox vite build --watch --outDir dist-firefox && web-ext run --firefox-profile=development --source-dir ./dist-firefox/",
-    "dev:chrome": "TARGET_BROWSER=chrome vite build --watch --outDir dist-chrome",
-    "preview": "vite preview",
-    "lint": "web-ext lint --source-dir ./dist-firefox/",
-    "lint:chrome": "web-ext lint --source-dir ./dist-chrome/",
-    "package": "node scripts/build-all.js",
-    "package:firefox": "web-ext build --config ./web-ext-config-firefox.cjs",
-    "package:chrome": "web-ext build --config ./web-ext-config-chrome.cjs",
-    "record-build": "node scripts/record-build.js",
-    "package-record": "node scripts/build-all.js --record",
-    "compare-checksums": "node scripts/compare-checksums.js",
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build -b chrome",
+    "build:firefox": "wxt build --mv3 -b firefox",
+    "zip": "wxt zip -b chrome",
+    "zip:firefox": "wxt zip --mv3 -b firefox",
+    "release": "node scripts/release.js",
+    "compile": "vue-tsc --noEmit",
+    "postinstall": "wxt prepare",
+    "lint": "wxt lint",
     "format": "pretty-quick --staged",
     "format:check": "pretty-quick --check --staged",
     "format:all": "prettier --write \"**/*.{js,vue,json,css,md,html}\"",
     "format:check:all": "prettier --check \"**/*.{js,vue,json,css,md,html}\"",
-    "release": "node scripts/release.js",
-    "release:patch": "node scripts/release.js --patch",
-    "release:minor": "node scripts/release.js --minor",
-    "release:major": "node scripts/release.js --major",
-    "dev-helper": "node scripts/dev-helper.js",
     "prepare": "husky"
   },
   "keywords": [
@@ -42,21 +32,20 @@
   "license": "GPL-3.0",
   "private": true,
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.0.5",
-    "fs-extra": "^11.1.0",
-    "glob": "^11.0.2",
+    "@wxt-dev/auto-icons": "^1.1.1",
+    "@wxt-dev/module-vue": "^1.0.3",
     "husky": "^9.1.7",
     "prettier": "^3.5.3",
     "pretty-quick": "^4.1.1",
-    "vite": "^6.3.5",
-    "web-ext": "^7.6.2"
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.2.5",
+    "wxt": "^0.20.18"
   },
   "dependencies": {
     "chart.js": "^4.4.0",
     "dayjs": "^1.11.10",
     "minisearch": "^7.1.2",
-    "vue": "^3.4.27",
-    "webextension-polyfill": "^0.12.0"
+    "vue": "^3.4.27"
   },
   "engines": {
     "node": ">=22.0.0"

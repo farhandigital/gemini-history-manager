@@ -1,9 +1,14 @@
+# WXT
+.wxt/
+lint/
+
 # Build directories
 dist/
 dist-zip/
 dist-stable/
 dist-firefox/
 dist-chrome/
+.output/
 
 # Node.js dependencies
 node_modules/

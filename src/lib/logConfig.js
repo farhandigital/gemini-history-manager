@@ -48,7 +48,7 @@ const DEFAULT_CONFIG = {
 };
 
 // Storage key for persisted config
-const CONFIG_STORAGE_KEY = "gemini_log_config";
+export const CONFIG_STORAGE_KEY = "gemini_log_config";
 
 // Cache for the loaded configuration to avoid frequent localStorage reads
 let configCache = null;
@@ -265,6 +265,7 @@ export function setLogLevel(level, enabled) {
 }
 
 export default {
+  CONFIG_STORAGE_KEY,
   loadLogConfig,
   saveLogConfig,
   isLoggingEnabled,
