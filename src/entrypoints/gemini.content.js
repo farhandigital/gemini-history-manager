@@ -2,7 +2,7 @@ import LogConfig from "@/lib/logConfig.js";
 import { Utils } from "../content-scripts/gemini-tracker/gemini-history-utils.js";
 import { STATE } from "../content-scripts/gemini-tracker/gemini-history-state.js";
 import { StatusIndicator } from "../content-scripts/gemini-tracker/gemini-history-status-indicator.js";
-import { DomObserver } from "../content-scripts/gemini-tracker/gemini-history-dom-observer.js";
+import { DomObserver } from "../content-scripts/gemini-tracker/observer/gemini-history-dom-observer.js";
 import { GemDetector } from "../content-scripts/gemini-tracker/gemini-history-gem-detector.js";
 import { EventHandlers } from "../content-scripts/gemini-tracker/gemini-history-event-handlers.js";
 import { CrashDetector } from "../content-scripts/gemini-tracker/gemini-history-crash-detector.js";

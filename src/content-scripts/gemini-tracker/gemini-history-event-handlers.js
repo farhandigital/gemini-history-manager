@@ -1,7 +1,7 @@
 import { STATE } from "./gemini-history-state.js";
 import { Utils } from "./gemini-history-utils.js";
 import { StatusIndicator } from "./gemini-history-status-indicator.js";
-import { DomObserver } from "./gemini-history-dom-observer.js";
+import { DomObserver } from "./observer/gemini-history-dom-observer.js";
 import { GemDetector } from "./gemini-history-gem-detector.js";
 import { ModelDetector } from "./gemini-history-model-detector.js";
 import { InputExtractor } from "./gemini-history-input-extractor.js";
