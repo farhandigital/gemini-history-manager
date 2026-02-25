@@ -7,6 +7,7 @@ export const CrashDetector = {
   // Track initialization state
   isInitialized: false,
   crashObserver: null,
+  containerObserver: null,
 
   /**
    * Initializes the crash detector system.
@@ -40,17 +41,29 @@ export const CrashDetector = {
   /**
    * Waits for the overlay container to appear in the DOM.
    * Sets up a temporary observer that watches for the overlay container creation.
+   * Stored on `this.containerObserver` so cleanup() can disconnect it if the
+   * overlay never appears (preventing a dangling observer on document.body).
    *
    * @returns {void}
    */
   waitForOverlayContainer: function () {
-    // Watch for the overlay container to appear
-    const containerObserver = new MutationObserver((mutations) => {
+    // Mark as initialized immediately so repeated init() calls before the
+    // overlay appears do not stack multiple containerObservers on document.body.
+    this.isInitialized = true;
+
+    // Disconnect any leftover containerObserver from a previous call
+    if (this.containerObserver) {
+      this.containerObserver.disconnect();
+      this.containerObserver = null;
+    }
+
+    this.containerObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
           if (node.nodeType === Node.ELEMENT_NODE && node.classList?.contains("cdk-overlay-container")) {
             console.log(`${Utils.getPrefix()} Overlay container appeared, setting up crash detector`);
-            containerObserver.disconnect();
+            this.containerObserver.disconnect();
+            this.containerObserver = null;
             this.setupCrashObserver(node);
             return;
           }
@@ -58,7 +71,7 @@ export const CrashDetector = {
       }
     });
 
-    containerObserver.observe(document.body, {
+    this.containerObserver.observe(document.body, {
       childList: true,
       subtree: true,
     });
@@ -161,6 +174,11 @@ export const CrashDetector = {
    * @returns {void}
    */
   cleanup: function () {
+    if (this.containerObserver) {
+      console.log(`${Utils.getPrefix()} Cleaning up crash detector container observer`);
+      this.containerObserver.disconnect();
+      this.containerObserver = null;
+    }
     if (this.crashObserver) {
       console.log(`${Utils.getPrefix()} Cleaning up crash detector observer`);
       this.crashObserver.disconnect();
