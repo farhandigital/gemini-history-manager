@@ -21,7 +21,7 @@ export default defineBackground(() => {
 
     // Update local state
     const previousCount = STATE.historyCount;
-    STATE.historyCount = count || STATE.historyCount;
+    STATE.historyCount = count ?? STATE.historyCount;
 
     Logger.debug("background", `Badge count: previous=${previousCount}, new=${STATE.historyCount}`);
 
