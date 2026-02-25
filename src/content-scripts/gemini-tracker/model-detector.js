@@ -1,4 +1,4 @@
-import { MODEL_NAMES, TOOL_NAMES } from "./config.js";
+import { MODEL_NAMES, TOOL_NAMES, GEMINI_PLANS } from "./constants.js";
 import { Utils } from "./utils.js";
 
 export const ModelDetector = {
@@ -138,7 +138,7 @@ export const ModelDetector = {
     const googleLogoSvg = this.detectGoogleLogoSvg(doc);
     if (googleLogoSvg) {
       console.log(`${Utils.getPrefix()} Detected Pro plan via Google logo SVG`);
-      return "Pro";
+      return GEMINI_PLANS.PRO;
     }
 
     // --- 2. Detect "Gemini Pro" via pillbox button (Secondary method) ---
@@ -150,13 +150,13 @@ export const ModelDetector = {
       const buttonTextContent = button.textContent;
       if (buttonTextContent) {
         const normalizedText = buttonTextContent.trim().toUpperCase();
-        if (normalizedText === "PRO") {
+        if (normalizedText === GEMINI_PLANS.PRO.toUpperCase()) {
           // Active "PRO" plan button is typically disabled.
           const isDisabled =
             button.hasAttribute("disabled") || button.classList.contains("mat-mdc-button-disabled");
           if (isDisabled) {
             console.log(`${Utils.getPrefix()} Detected Pro plan via pillbox button`);
-            return "Pro";
+            return GEMINI_PLANS.PRO;
           }
         }
         // Potentially add "ULTRA" detection here in the future if a similar pillbox exists.
@@ -186,7 +186,7 @@ export const ModelDetector = {
 
           if (hasUpgradeText) {
             console.log(`${Utils.getPrefix()} Detected Free plan via upgrade button (${selector})`);
-            return "Free";
+            return GEMINI_PLANS.FREE;
           }
         }
       } catch (e) {
@@ -202,7 +202,7 @@ export const ModelDetector = {
         const textContent = button.textContent || "";
         if (textContent.toLowerCase().includes("upgrade")) {
           console.log(`${Utils.getPrefix()} Detected Free plan via button text content`);
-          return "Free";
+          return GEMINI_PLANS.FREE;
         }
       }
     } catch (e) {
@@ -226,7 +226,7 @@ export const ModelDetector = {
           console.log(
             `${Utils.getPrefix()} Detected Free plan as fallback (account area found via ${selector} but no Pro indicators)`
           );
-          return "Free";
+          return GEMINI_PLANS.FREE;
         }
       } catch (e) {
         // Some selectors might not be supported, continue to next

@@ -1,6 +1,7 @@
 import { CONFIG } from "./config.js";
 import { Utils } from "./utils.js";
 import { StatusIndicator } from "./status-indicator.js";
+import { BROWSER_ACTIONS } from "./constants.js";
 
 export const HistoryManager = {
   /**
@@ -53,7 +54,7 @@ export const HistoryManager = {
         // Send message to background script to update badge
         browser.runtime
           .sendMessage({
-            action: "updateHistoryCount",
+            action: BROWSER_ACTIONS.UPDATE_HISTORY_COUNT,
             count: history.length,
           })
           .catch((err) => console.error(`${Utils.getPrefix()} Error sending message to background:`, err));

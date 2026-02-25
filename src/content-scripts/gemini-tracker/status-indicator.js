@@ -1,4 +1,5 @@
 import { Utils } from "./utils.js";
+import { STATUS_TYPES } from "./constants.js";
 
 export const StatusIndicator = {
   element: null,
@@ -170,7 +171,7 @@ export const StatusIndicator = {
    * @param {number} autoHide - Time in ms after which to hide the indicator, or 0 to stay visible
    * @returns {Object} - Returns the StatusIndicator instance for chaining
    */
-  show: function (message, type = "info", autoHide = this.DEFAULT_AUTO_HIDE) {
+  show: function (message, type = STATUS_TYPES.INFO, autoHide = this.DEFAULT_AUTO_HIDE) {
     if (!this.element) {
       this.init();
     }
@@ -182,7 +183,7 @@ export const StatusIndicator = {
     }
 
     // Remove hidden class and set message
-    this.element.classList.remove("hidden", "info", "success", "warning", "error", "loading");
+    this.element.classList.remove("hidden", ...Object.values(STATUS_TYPES));
     this.element.classList.add(type);
 
     const messageEl = this.element.querySelector(".status-message");
@@ -220,7 +221,7 @@ export const StatusIndicator = {
 
     // Update type if specified
     if (type) {
-      this.element.classList.remove("info", "success", "warning", "error", "loading");
+      this.element.classList.remove(...Object.values(STATUS_TYPES));
       this.element.classList.add(type);
     }
 
