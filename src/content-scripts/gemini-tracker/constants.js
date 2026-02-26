@@ -62,6 +62,9 @@ export const ERROR_PATTERNS = ["went wrong", "try again"];
  * STATUS_TYPES
  * Valid type values for the StatusIndicator. Each value is also the CSS class
  * applied to the indicator element that controls its icon and colour theme.
+ *
+ * CROSS-REFERENCE: If you add a new status type here, make sure to add its
+ * corresponding CSS rules for the icon and style in `status-indicator.js`.
  */
 export const STATUS_TYPES = {
   INFO: "info",
