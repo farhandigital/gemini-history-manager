@@ -55,6 +55,7 @@ export const SELECTORS = {
   PLAN_UPSELL_BUTTON: 'upsell-button button[data-test-id="bard-upsell-menu-button"]',
   PLAN_UPGRADE_BUTTON_ARIA: 'button[aria-label*="upgrade" i]',
   PLAN_UPSELL_COMPONENT: '[data-test-id*="upsell"] button',
+  PLAN_KEYWORD_UPGRADE: "upgrade",
 
   // ── Model switcher ─────────────────────────────────────────────────────────
   MODEL_INPUT_AREA_SWITCHER: "bard-mode-switcher .logo-pill-label-container.input-area-switch-label span",
