@@ -54,14 +54,14 @@ export const StatusIndicator = {
               }
 
               /* Info icon */
-              .info .status-icon::before {
+              .${STATUS_TYPES.INFO} .status-icon::before {
                   width: 20px;
                   height: 20px;
                   background: #3498db;
                   border-radius: 50%;
               }
 
-              .info .status-icon::after {
+              .${STATUS_TYPES.INFO} .status-icon::after {
                   content: 'i';
                   color: white;
                   font-style: italic;
@@ -73,14 +73,14 @@ export const StatusIndicator = {
               }
 
               /* Success icon */
-              .success .status-icon::before {
+              .${STATUS_TYPES.SUCCESS} .status-icon::before {
                   width: 20px;
                   height: 20px;
                   background: #2ecc71;
                   border-radius: 50%;
               }
 
-              .success .status-icon::after {
+              .${STATUS_TYPES.SUCCESS} .status-icon::after {
                   width: 6px;
                   height: 12px;
                   border-right: 2px solid white;
@@ -91,7 +91,7 @@ export const StatusIndicator = {
               }
 
               /* Warning icon */
-              .warning .status-icon::before {
+              .${STATUS_TYPES.WARNING} .status-icon::before {
                   width: 0;
                   height: 0;
                   border-left: 10px solid transparent;
@@ -100,7 +100,7 @@ export const StatusIndicator = {
                   top: 1px;
               }
 
-              .warning .status-icon::after {
+              .${STATUS_TYPES.WARNING} .status-icon::after {
                   content: '!';
                   color: white;
                   font-weight: bold;
@@ -110,14 +110,14 @@ export const StatusIndicator = {
               }
 
               /* Error icon */
-              .error .status-icon::before {
+              .${STATUS_TYPES.ERROR} .status-icon::before {
                   width: 20px;
                   height: 20px;
                   background: #e74c3c;
                   border-radius: 50%;
               }
 
-              .error .status-icon::after {
+              .${STATUS_TYPES.ERROR} .status-icon::after {
                   content: '✕';
                   color: white;
                   font-size: 14px;
@@ -126,7 +126,7 @@ export const StatusIndicator = {
               }
 
               /* Loading icon */
-              .loading .status-icon::before {
+              .${STATUS_TYPES.LOADING} .status-icon::before {
                   width: 16px;
                   height: 16px;
                   border: 2px solid #ccc;
