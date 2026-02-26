@@ -181,7 +181,7 @@ export const ModelDetector = {
           const title = upgradeButton.getAttribute("title") || "";
 
           const hasUpgradeText = [ariaLabel, textContent, title].some((text) =>
-            text.toLowerCase().includes("upgrade")
+            text.toLowerCase().includes(SELECTORS.PLAN_KEYWORD_UPGRADE)
           );
 
           if (hasUpgradeText) {
@@ -200,7 +200,7 @@ export const ModelDetector = {
       const allButtons = doc.querySelectorAll("button");
       for (const button of allButtons) {
         const textContent = button.textContent || "";
-        if (textContent.toLowerCase().includes("upgrade")) {
+        if (textContent.toLowerCase().includes(SELECTORS.PLAN_KEYWORD_UPGRADE)) {
           console.log(`${Utils.getPrefix()} Detected Free plan via button text content`);
           return GEMINI_PLANS.FREE;
         }
