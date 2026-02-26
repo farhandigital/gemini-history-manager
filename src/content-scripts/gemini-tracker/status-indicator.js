@@ -1,4 +1,6 @@
-import { Utils } from "./gemini-history-utils.js";
+import { Utils } from "./utils.js";
+import { STATUS_TYPES } from "./constants.js";
+import { SELECTORS } from "./selectors.js";
 
 export const StatusIndicator = {
   element: null,
@@ -52,14 +54,14 @@ export const StatusIndicator = {
               }
 
               /* Info icon */
-              .info .status-icon::before {
+              .${STATUS_TYPES.INFO} .status-icon::before {
                   width: 20px;
                   height: 20px;
                   background: #3498db;
                   border-radius: 50%;
               }
 
-              .info .status-icon::after {
+              .${STATUS_TYPES.INFO} .status-icon::after {
                   content: 'i';
                   color: white;
                   font-style: italic;
@@ -71,14 +73,14 @@ export const StatusIndicator = {
               }
 
               /* Success icon */
-              .success .status-icon::before {
+              .${STATUS_TYPES.SUCCESS} .status-icon::before {
                   width: 20px;
                   height: 20px;
                   background: #2ecc71;
                   border-radius: 50%;
               }
 
-              .success .status-icon::after {
+              .${STATUS_TYPES.SUCCESS} .status-icon::after {
                   width: 6px;
                   height: 12px;
                   border-right: 2px solid white;
@@ -89,7 +91,7 @@ export const StatusIndicator = {
               }
 
               /* Warning icon */
-              .warning .status-icon::before {
+              .${STATUS_TYPES.WARNING} .status-icon::before {
                   width: 0;
                   height: 0;
                   border-left: 10px solid transparent;
@@ -98,7 +100,7 @@ export const StatusIndicator = {
                   top: 1px;
               }
 
-              .warning .status-icon::after {
+              .${STATUS_TYPES.WARNING} .status-icon::after {
                   content: '!';
                   color: white;
                   font-weight: bold;
@@ -108,14 +110,14 @@ export const StatusIndicator = {
               }
 
               /* Error icon */
-              .error .status-icon::before {
+              .${STATUS_TYPES.ERROR} .status-icon::before {
                   width: 20px;
                   height: 20px;
                   background: #e74c3c;
                   border-radius: 50%;
               }
 
-              .error .status-icon::after {
+              .${STATUS_TYPES.ERROR} .status-icon::after {
                   content: '✕';
                   color: white;
                   font-size: 14px;
@@ -124,7 +126,7 @@ export const StatusIndicator = {
               }
 
               /* Loading icon */
-              .loading .status-icon::before {
+              .${STATUS_TYPES.LOADING} .status-icon::before {
                   width: 16px;
                   height: 16px;
                   border: 2px solid #ccc;
@@ -143,15 +145,15 @@ export const StatusIndicator = {
 
     // Create the indicator element
     const indicator = document.createElement("div");
-    indicator.id = "gemini-history-status";
-    indicator.className = "gemini-history-status hidden";
+    indicator.id = SELECTORS.STATUS_INDICATOR_ID;
+    indicator.className = `${SELECTORS.STATUS_INDICATOR_CLASS} ${SELECTORS.STATUS_INDICATOR_HIDDEN}`;
 
     // Create inner elements for icon and message
     const iconContainer = document.createElement("div");
-    iconContainer.className = "status-icon";
+    iconContainer.className = SELECTORS.STATUS_ICON_ELEMENT;
 
     const messageContainer = document.createElement("div");
-    messageContainer.className = "status-message";
+    messageContainer.className = SELECTORS.STATUS_MESSAGE_ELEMENT;
 
     // Append elements
     indicator.appendChild(iconContainer);
@@ -170,7 +172,7 @@ export const StatusIndicator = {
    * @param {number} autoHide - Time in ms after which to hide the indicator, or 0 to stay visible
    * @returns {Object} - Returns the StatusIndicator instance for chaining
    */
-  show: function (message, type = "info", autoHide = this.DEFAULT_AUTO_HIDE) {
+  show: function (message, type = STATUS_TYPES.INFO, autoHide = this.DEFAULT_AUTO_HIDE) {
     if (!this.element) {
       this.init();
     }
@@ -182,10 +184,10 @@ export const StatusIndicator = {
     }
 
     // Remove hidden class and set message
-    this.element.classList.remove("hidden", "info", "success", "warning", "error", "loading");
+    this.element.classList.remove(SELECTORS.STATUS_INDICATOR_HIDDEN, ...Object.values(STATUS_TYPES));
     this.element.classList.add(type);
 
-    const messageEl = this.element.querySelector(".status-message");
+    const messageEl = this.element.querySelector(`.${SELECTORS.STATUS_MESSAGE_ELEMENT}`);
     if (messageEl) {
       messageEl.textContent = message;
     }
@@ -213,14 +215,14 @@ export const StatusIndicator = {
     if (!this.element) return this;
 
     // Update message
-    const messageEl = this.element.querySelector(".status-message");
+    const messageEl = this.element.querySelector(`.${SELECTORS.STATUS_MESSAGE_ELEMENT}`);
     if (messageEl) {
       messageEl.textContent = message;
     }
 
     // Update type if specified
     if (type) {
-      this.element.classList.remove("info", "success", "warning", "error", "loading");
+      this.element.classList.remove(...Object.values(STATUS_TYPES));
       this.element.classList.add(type);
     }
 
@@ -246,7 +248,7 @@ export const StatusIndicator = {
   hide: function () {
     if (!this.element) return;
 
-    this.element.classList.add("hidden");
+    this.element.classList.add(SELECTORS.STATUS_INDICATOR_HIDDEN);
 
     if (this.timeout) {
       clearTimeout(this.timeout);

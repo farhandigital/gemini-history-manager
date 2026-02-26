@@ -1,4 +1,4 @@
-import { CONFIG } from "./gemini-history-config.js";
+import { CONFIG } from "./config.js";
 
 export const Utils = {
   /**

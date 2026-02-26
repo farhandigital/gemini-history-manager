@@ -1,7 +1,9 @@
-import { STATE } from "./gemini-history-state.js";
-import { Utils } from "./gemini-history-utils.js";
-import { StatusIndicator } from "./gemini-history-status-indicator.js";
-import { DomObserver } from "./observer/gemini-history-dom-observer.js";
+import { STATE } from "./state.js";
+import { Utils } from "./utils.js";
+import { StatusIndicator } from "./status-indicator.js";
+import { DomObserver } from "./observer/dom-observer.js";
+import { ERROR_PATTERNS, STATUS_TYPES } from "./constants.js";
+import { SELECTORS } from "./selectors.js";
 
 export const CrashDetector = {
   // Track initialization state
@@ -25,7 +27,7 @@ export const CrashDetector = {
     console.log(`${Utils.getPrefix()} Setting up Gemini crash detector...`);
 
     // Find or wait for the overlay container
-    const overlayContainer = document.querySelector(".cdk-overlay-container");
+    const overlayContainer = document.querySelector(SELECTORS.OVERLAY_CONTAINER);
 
     if (!overlayContainer) {
       console.log(
@@ -60,7 +62,7 @@ export const CrashDetector = {
     this.containerObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
-          if (node.nodeType === Node.ELEMENT_NODE && node.classList?.contains("cdk-overlay-container")) {
+          if (node.nodeType === Node.ELEMENT_NODE && node.matches(SELECTORS.OVERLAY_CONTAINER)) {
             console.log(`${Utils.getPrefix()} Overlay container appeared, setting up crash detector`);
             this.containerObserver.disconnect();
             this.containerObserver = null;
@@ -95,7 +97,10 @@ export const CrashDetector = {
     this.crashObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
-          if (node.nodeType === Node.ELEMENT_NODE && node.tagName?.toLowerCase() === "simple-snack-bar") {
+          if (
+            node.nodeType === Node.ELEMENT_NODE &&
+            node.tagName?.toLowerCase() === SELECTORS.SNACK_BAR_TAG
+          ) {
             this.handleSnackBarDetected(node);
           }
         }
@@ -137,9 +142,7 @@ export const CrashDetector = {
    * @returns {boolean} - True if the text indicates an error, false otherwise
    */
   isErrorMessage: function (text) {
-    const errorPatterns = ["went wrong", "try again"];
-
-    return errorPatterns.some((pattern) => text.includes(pattern));
+    return ERROR_PATTERNS.some((pattern) => text.includes(pattern));
   },
 
   /**
@@ -161,7 +164,7 @@ export const CrashDetector = {
 
     // Perform cleanup and show error status
     DomObserver.completeCleanup();
-    StatusIndicator.show("Gemini crashed. Tracking canceled.", "error", 5000);
+    StatusIndicator.show("Gemini crashed. Tracking canceled.", STATUS_TYPES.ERROR, 5000);
 
     // Log the crash for debugging
     console.error(`${Utils.getPrefix()} Gemini crash detected and handled. Error message: "${errorMessage}"`);

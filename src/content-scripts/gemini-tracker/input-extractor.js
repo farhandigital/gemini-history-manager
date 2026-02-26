@@ -1,4 +1,5 @@
-import { Utils } from "./gemini-history-utils.js";
+import { Utils } from "./utils.js";
+import { SELECTORS } from "./selectors.js";
 
 export const InputExtractor = {
   /**
@@ -9,7 +10,7 @@ export const InputExtractor = {
    * @returns {string} - The extracted prompt text or empty string if not found
    */
   getPromptText: function () {
-    const promptElement = document.querySelector("rich-textarea .ql-editor");
+    const promptElement = document.querySelector(SELECTORS.PROMPT_INPUT);
     if (promptElement) {
       const text = promptElement.innerText.trim();
 
@@ -26,7 +27,7 @@ export const InputExtractor = {
       console.log(`${Utils.getPrefix()} Extracted prompt text: "${text}"`);
       return text;
     } else {
-      console.warn(`${Utils.getPrefix()} Could not find prompt input element ('rich-textarea .ql-editor').`);
+      console.warn(`${Utils.getPrefix()} Could not find prompt input element ('${SELECTORS.PROMPT_INPUT}').`);
       return ""; // Return empty string if not found
     }
   },
@@ -39,7 +40,7 @@ export const InputExtractor = {
    * @returns {string} - The original prompt text limited to 200 characters, or empty string if not found
    */
   getOriginalPromptText: function () {
-    const promptElement = document.querySelector("rich-textarea .ql-editor");
+    const promptElement = document.querySelector(SELECTORS.PROMPT_INPUT);
     if (promptElement) {
       const text = promptElement.innerText.trim();
 
@@ -62,9 +63,7 @@ export const InputExtractor = {
    * @returns {string[]} - Array of filenames (strings) or empty array if none found
    */
   getAttachedFiles: function () {
-    const fileElements = document.querySelectorAll(
-      'uploader-file-preview-container .file-preview [data-test-id="file-name"]'
-    );
+    const fileElements = document.querySelectorAll(SELECTORS.ATTACHED_FILE);
     if (fileElements.length > 0) {
       const filenames = Array.from(fileElements).map((el) => {
         // Prefer the 'title' attribute as it usually contains the full name
@@ -87,7 +86,7 @@ export const InputExtractor = {
     console.log(`${Utils.getPrefix()} Attempting to extract account information...`);
 
     // Strategy 1: Find by link to accounts.google.com with aria-label containing email
-    const accountLinks = Array.from(document.querySelectorAll('a[href*="accounts.google.com"]'));
+    const accountLinks = Array.from(document.querySelectorAll(SELECTORS.ACCOUNT_LINK));
     let accountElement = null;
     let ariaLabel = null;
 
@@ -106,7 +105,7 @@ export const InputExtractor = {
 
     // Strategy 2: Find by profile image
     if (!accountElement) {
-      const profileImages = document.querySelectorAll("img.gbii, img.gb_P");
+      const profileImages = document.querySelectorAll(SELECTORS.PROFILE_IMAGE);
       for (const img of profileImages) {
         const parent = img.closest("a[aria-label]");
         if (parent) {
@@ -126,7 +125,7 @@ export const InputExtractor = {
     // Strategy 3: Find by user menu structure
     if (!accountElement) {
       // Look for common Google account menu container classes
-      const potentialContainers = document.querySelectorAll(".gb_z, .gb_D, .gb_Za");
+      const potentialContainers = document.querySelectorAll(SELECTORS.ACCOUNT_CONTAINER);
       for (const container of potentialContainers) {
         const accountLink = container.querySelector("a[aria-label]");
         if (accountLink) {

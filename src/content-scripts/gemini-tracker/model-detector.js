@@ -1,5 +1,6 @@
-import { MODEL_NAMES, TOOL_NAMES } from "./gemini-history-config.js";
-import { Utils } from "./gemini-history-utils.js";
+import { MODEL_NAMES, TOOL_NAMES, GEMINI_PLANS } from "./constants.js";
+import { Utils } from "./utils.js";
+import { SELECTORS } from "./selectors.js";
 
 export const ModelDetector = {
   /**
@@ -49,9 +50,9 @@ export const ModelDetector = {
   detectGoogleLogoSvg: function (doc) {
     // Strategy 1: Look for SVGs in account area with Google-like dimensions
     const accountSelectors = [
-      '[aria-label*="Google Account"]', // Most reliable - semantic meaning
-      ".gb_B", // Current Google class, but may change
-      '[class*="gb_"]', // Any Google bar class as fallback
+      SELECTORS.GOOGLE_ACCOUNT_AREA,
+      SELECTORS.GOOGLE_BAR_CLASS,
+      SELECTORS.GOOGLE_BAR_ANY_CLASS,
     ];
 
     for (const selector of accountSelectors) {
@@ -130,7 +131,7 @@ export const ModelDetector = {
    * then falls back to pillbox buttons and upgrade buttons as secondary methods.
    *
    * @param {Document} doc The document object to search within (defaults to the current document).
-   * @returns {string|null} "Gemini Pro", "Gemini Free", or null if the plan cannot be determined.
+   * @returns {string|null} GEMINI_PLANS.PRO ("Pro"), GEMINI_PLANS.FREE ("Free"), or null if the plan cannot be determined.
    */
   detectGeminiPlan: function (doc = document) {
     // --- 1. Detect "Gemini Pro" via Google logo SVG (Primary method) ---
@@ -138,25 +139,25 @@ export const ModelDetector = {
     const googleLogoSvg = this.detectGoogleLogoSvg(doc);
     if (googleLogoSvg) {
       console.log(`${Utils.getPrefix()} Detected Pro plan via Google logo SVG`);
-      return "Pro";
+      return GEMINI_PLANS.PRO;
     }
 
     // --- 2. Detect "Gemini Pro" via pillbox button (Secondary method) ---
     // Selector for the pillbox button that usually displays the current plan (e.g., "PRO").
-    const proPillButtonSelector = "div.icon-buttons-container.pillbox button.gds-pillbox-button";
+    const proPillButtonSelector = SELECTORS.PLAN_PRO_PILL;
     const pillButtons = doc.querySelectorAll(proPillButtonSelector);
 
     for (const button of pillButtons) {
       const buttonTextContent = button.textContent;
       if (buttonTextContent) {
         const normalizedText = buttonTextContent.trim().toUpperCase();
-        if (normalizedText === "PRO") {
+        if (normalizedText === GEMINI_PLANS.PRO.toUpperCase()) {
           // Active "PRO" plan button is typically disabled.
           const isDisabled =
             button.hasAttribute("disabled") || button.classList.contains("mat-mdc-button-disabled");
           if (isDisabled) {
             console.log(`${Utils.getPrefix()} Detected Pro plan via pillbox button`);
-            return "Pro";
+            return GEMINI_PLANS.PRO;
           }
         }
         // Potentially add "ULTRA" detection here in the future if a similar pillbox exists.
@@ -166,10 +167,9 @@ export const ModelDetector = {
     // --- 3. Detect "Gemini Free" via upgrade button (If "Pro" was not detected) ---
     // Look for upgrade buttons using multiple strategies
     const upgradeButtonSelectors = [
-      'upsell-button button[data-test-id="bard-upsell-menu-button"]', // Current selector
-      'button[aria-label*="upgrade" i]', // Any button with "upgrade" in aria-label
-      'button[aria-label*="Upgrade" i]', // Case variations
-      '[data-test-id*="upsell"] button', // Any upsell component button
+      SELECTORS.PLAN_UPSELL_BUTTON,
+      SELECTORS.PLAN_UPGRADE_BUTTON_ARIA,
+      SELECTORS.PLAN_UPSELL_COMPONENT,
     ];
 
     for (const selector of upgradeButtonSelectors) {
@@ -181,12 +181,12 @@ export const ModelDetector = {
           const title = upgradeButton.getAttribute("title") || "";
 
           const hasUpgradeText = [ariaLabel, textContent, title].some((text) =>
-            text.toLowerCase().includes("upgrade")
+            text.toLowerCase().includes(SELECTORS.PLAN_KEYWORD_UPGRADE)
           );
 
           if (hasUpgradeText) {
             console.log(`${Utils.getPrefix()} Detected Free plan via upgrade button (${selector})`);
-            return "Free";
+            return GEMINI_PLANS.FREE;
           }
         }
       } catch (e) {
@@ -200,9 +200,9 @@ export const ModelDetector = {
       const allButtons = doc.querySelectorAll("button");
       for (const button of allButtons) {
         const textContent = button.textContent || "";
-        if (textContent.toLowerCase().includes("upgrade")) {
+        if (textContent.toLowerCase().includes(SELECTORS.PLAN_KEYWORD_UPGRADE)) {
           console.log(`${Utils.getPrefix()} Detected Free plan via button text content`);
-          return "Free";
+          return GEMINI_PLANS.FREE;
         }
       }
     } catch (e) {
@@ -212,11 +212,11 @@ export const ModelDetector = {
     // --- 4. Detect "Gemini Free" as fallback (If account area exists but no Pro indicators) ---
     // Use multiple strategies to find account area
     const accountSelectors = [
-      '[aria-label*="Google Account" i]', // Most semantic and reliable
-      '.gb_B[aria-label*="Google Account" i]', // Current implementation
-      '[class*="gb_"][aria-label*="account" i]', // Google bar with account reference
-      'a[href*="accounts.google.com"]', // Link to Google accounts
-      '[aria-label*="account" i]:has(img)', // Any account element with profile image
+      SELECTORS.ACCOUNT_GOOGLE_AREA,
+      SELECTORS.ACCOUNT_GOOGLE_AREA_CLASS,
+      SELECTORS.ACCOUNT_GOOGLE_BAR,
+      SELECTORS.ACCOUNT_LINK,
+      SELECTORS.ACCOUNT_WITH_IMAGE,
     ];
 
     for (const selector of accountSelectors) {
@@ -226,7 +226,7 @@ export const ModelDetector = {
           console.log(
             `${Utils.getPrefix()} Detected Free plan as fallback (account area found via ${selector} but no Pro indicators)`
           );
-          return "Free";
+          return GEMINI_PLANS.FREE;
         }
       } catch (e) {
         // Some selectors might not be supported, continue to next
@@ -277,7 +277,7 @@ export const ModelDetector = {
     console.log(`${Utils.getPrefix()} Checking for activated tools...`);
 
     // NEW: Check for deselect button (indicates an active tool in Nov 2025+ UI)
-    const deselectButton = document.querySelector("button.toolbox-drawer-item-deselect-button");
+    const deselectButton = document.querySelector(SELECTORS.TOOLBOX_DESELECT_BUTTON);
 
     if (deselectButton) {
       // Method 1: Parse from aria-label (most reliable)
@@ -291,7 +291,7 @@ export const ModelDetector = {
       }
 
       // Method 2: Fallback to label text
-      const labelElement = deselectButton.querySelector(".toolbox-drawer-item-deselect-button-label");
+      const labelElement = deselectButton.querySelector(SELECTORS.TOOLBOX_DESELECT_LABEL);
       if (labelElement && labelElement.textContent) {
         const labelText = labelElement.textContent.trim();
         if (labelText) {
@@ -302,15 +302,13 @@ export const ModelDetector = {
     }
 
     // LEGACY: Check for old UI structure (pre-Nov 2025)
-    const activatedButtons = document.querySelectorAll(
-      'button.toolbox-drawer-item-button.is-selected[aria-pressed="true"]'
-    );
+    const activatedButtons = document.querySelectorAll(SELECTORS.TOOLBOX_ITEM_BUTTON_ACTIVE);
     console.log(
       `${Utils.getPrefix()} Found ${activatedButtons.length} activated tool buttons (legacy check)`
     );
 
     for (const button of activatedButtons) {
-      const labelElement = button.querySelector(".toolbox-drawer-button-label");
+      const labelElement = button.querySelector(SELECTORS.TOOLBOX_BUTTON_LABEL);
       if (!labelElement || !labelElement.textContent) continue;
 
       const buttonText = labelElement.textContent.trim();
@@ -320,29 +318,23 @@ export const ModelDetector = {
     }
 
     // Alternative legacy detection via icons
-    const toolboxDrawer = document.querySelector("toolbox-drawer");
+    const toolboxDrawer = document.querySelector(SELECTORS.TOOLBOX_DRAWER);
     if (toolboxDrawer) {
-      // Try to find Deep Research button via icon
-      const deepResearchIcon = toolboxDrawer.querySelector('mat-icon[data-mat-icon-name="travel_explore"]');
+      const deepResearchIcon = toolboxDrawer.querySelector(SELECTORS.TOOLBOX_DEEP_RESEARCH_ICON);
       if (deepResearchIcon) {
-        const deepResearchButton = deepResearchIcon.closest(
-          'button.toolbox-drawer-item-button.is-selected[aria-pressed="true"]'
-        );
+        const deepResearchButton = deepResearchIcon.closest(SELECTORS.TOOLBOX_ITEM_BUTTON_ACTIVE);
         if (deepResearchButton) {
           console.log(`${Utils.getPrefix()} Deep Research tool is activated (detected via icon)`);
-          return "Deep Research";
+          return this.normalizeTool("Deep Research");
         }
       }
 
-      // Try to find Video button via icon
-      const videoIcon = toolboxDrawer.querySelector('mat-icon[data-mat-icon-name="movie"]');
+      const videoIcon = toolboxDrawer.querySelector(SELECTORS.TOOLBOX_VIDEO_ICON);
       if (videoIcon) {
-        const videoButton = videoIcon.closest(
-          'button.toolbox-drawer-item-button.is-selected[aria-pressed="true"]'
-        );
+        const videoButton = videoIcon.closest(SELECTORS.TOOLBOX_ITEM_BUTTON_ACTIVE);
         if (videoButton) {
           console.log(`${Utils.getPrefix()} Video tool is activated (detected via icon)`);
-          return "Create videos";
+          return this.normalizeTool("Create videos");
         }
       }
     }
@@ -375,9 +367,7 @@ export const ModelDetector = {
 
     // Try #1: New input area model switcher (Nov 2025+)
     // Model switcher moved from top menu to inside the chat input area
-    const inputAreaSwitcher = document.querySelector(
-      "bard-mode-switcher .logo-pill-label-container.input-area-switch-label span"
-    );
+    const inputAreaSwitcher = document.querySelector(SELECTORS.MODEL_INPUT_AREA_SWITCHER);
     if (inputAreaSwitcher && inputAreaSwitcher.textContent) {
       rawText = inputAreaSwitcher.textContent.trim();
       foundVia = "Input Area Model Switcher";
@@ -385,9 +375,7 @@ export const ModelDetector = {
     } else {
       console.log(`${Utils.getPrefix()} Model not found via Input Area Model Switcher.`);
       // Try #2: Generic bard-mode-switcher label container
-      const modeSwitcherLabel = document.querySelector(
-        "bard-mode-switcher .logo-pill-label-container span:first-child"
-      );
+      const modeSwitcherLabel = document.querySelector(SELECTORS.MODEL_MODE_SWITCHER_LABEL);
       if (modeSwitcherLabel && modeSwitcherLabel.textContent) {
         rawText = modeSwitcherLabel.textContent.trim();
         foundVia = "Mode Switcher Label";
@@ -395,9 +383,7 @@ export const ModelDetector = {
       } else {
         console.log(`${Utils.getPrefix()} Model not found via Mode Switcher Label.`);
         // Try #3: Legacy button structure
-        const modelButton = document.querySelector(
-          "button.gds-mode-switch-button.mat-mdc-button-base .logo-pill-label-container span"
-        );
+        const modelButton = document.querySelector(SELECTORS.MODEL_LEGACY_BUTTON);
         if (modelButton && modelButton.textContent) {
           rawText = modelButton.textContent.trim();
           foundVia = "Legacy Button Structure";
@@ -405,9 +391,7 @@ export const ModelDetector = {
         } else {
           console.log(`${Utils.getPrefix()} Model not found via Legacy Button Structure.`);
           // Try #4: data-test-id
-          const modelElement = document.querySelector(
-            'bard-mode-switcher [data-test-id="attribution-text"] span'
-          );
+          const modelElement = document.querySelector(SELECTORS.MODEL_DATA_TEST_ID);
           if (modelElement && modelElement.textContent) {
             rawText = modelElement.textContent.trim();
             foundVia = "Data-Test-ID";
@@ -415,7 +399,7 @@ export const ModelDetector = {
           } else {
             console.log(`${Utils.getPrefix()} Model not found via Data-Test-ID.`);
             // Try #5: Fallback selector
-            const fallbackElement = document.querySelector(".current-mode-title span");
+            const fallbackElement = document.querySelector(SELECTORS.MODEL_FALLBACK);
             if (fallbackElement && fallbackElement.textContent) {
               rawText = fallbackElement.textContent.trim();
               foundVia = "Fallback Selector (.current-mode-title)";

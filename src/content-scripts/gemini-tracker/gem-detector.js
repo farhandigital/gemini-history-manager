@@ -1,4 +1,4 @@
-import { Utils } from "./gemini-history-utils.js";
+import { Utils } from "./utils.js";
 
 // Selectors for the container holding the Gem's name.
 // Using multiple selectors to adapt to different DOM structures

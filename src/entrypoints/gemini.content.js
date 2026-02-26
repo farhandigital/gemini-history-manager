@@ -1,11 +1,11 @@
 import LogConfig from "@/lib/logConfig.js";
-import { Utils } from "../content-scripts/gemini-tracker/gemini-history-utils.js";
-import { STATE } from "../content-scripts/gemini-tracker/gemini-history-state.js";
-import { StatusIndicator } from "../content-scripts/gemini-tracker/gemini-history-status-indicator.js";
-import { DomObserver } from "../content-scripts/gemini-tracker/observer/gemini-history-dom-observer.js";
-import { GemDetector } from "../content-scripts/gemini-tracker/gemini-history-gem-detector.js";
-import { EventHandlers } from "../content-scripts/gemini-tracker/gemini-history-event-handlers.js";
-import { CrashDetector } from "../content-scripts/gemini-tracker/gemini-history-crash-detector.js";
+import { Utils } from "../content-scripts/gemini-tracker/utils.js";
+import { STATE } from "../content-scripts/gemini-tracker/state.js";
+import { StatusIndicator } from "../content-scripts/gemini-tracker/status-indicator.js";
+import { DomObserver } from "../content-scripts/gemini-tracker/observer/dom-observer.js";
+import { GemDetector } from "../content-scripts/gemini-tracker/gem-detector.js";
+import { EventHandlers } from "../content-scripts/gemini-tracker/event-handlers.js";
+import { CrashDetector } from "../content-scripts/gemini-tracker/crash-detector.js";
 
 /**
  * Re-initializes observers after they have been cleaned up.

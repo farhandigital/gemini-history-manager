@@ -1,8 +1,8 @@
-import { STATE } from "../gemini-history-state.js";
-import { Utils } from "../gemini-history-utils.js";
-import { StatusIndicator } from "../gemini-history-status-indicator.js";
-import { GemDetector } from "../gemini-history-gem-detector.js";
-import { HistoryManager } from "../gemini-history-history-manager.js";
+import { STATE } from "../state.js";
+import { Utils } from "../utils.js";
+import { StatusIndicator } from "../status-indicator.js";
+import { GemDetector } from "../gem-detector.js";
+import { HistoryManager } from "../history-manager.js";
 import { ObserverLifecycle } from "./observer-lifecycle.js";
 import { ObserverStateManager } from "./observer-state-manager.js";
 

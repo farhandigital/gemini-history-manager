@@ -1,10 +1,11 @@
-import { STATE } from "./gemini-history-state.js";
-import { Utils } from "./gemini-history-utils.js";
-import { StatusIndicator } from "./gemini-history-status-indicator.js";
-import { DomObserver } from "./observer/gemini-history-dom-observer.js";
-import { GemDetector } from "./gemini-history-gem-detector.js";
-import { ModelDetector } from "./gemini-history-model-detector.js";
-import { InputExtractor } from "./gemini-history-input-extractor.js";
+import { STATE } from "./state.js";
+import { Utils } from "./utils.js";
+import { StatusIndicator } from "./status-indicator.js";
+import { DomObserver } from "./observer/dom-observer.js";
+import { GemDetector } from "./gem-detector.js";
+import { ModelDetector } from "./model-detector.js";
+import { InputExtractor } from "./input-extractor.js";
+import { SELECTORS } from "./selectors.js";
 
 export const EventHandlers = {
   /**
@@ -14,9 +15,7 @@ export const EventHandlers = {
    * @returns {Element|false} - The send button element if found and valid, false otherwise
    */
   isSendButton: function (target) {
-    const sendButton = target.closest(
-      'button:has(mat-icon[data-mat-icon-name="send"]), button.send-button, button[aria-label*="Send"], button[data-test-id="send-button"]'
-    );
+    const sendButton = target.closest(SELECTORS.SEND_BUTTON);
 
     if (!sendButton) {
       return false;
