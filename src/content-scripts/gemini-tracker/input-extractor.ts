@@ -1,20 +1,24 @@
 import { Utils } from "./utils.js";
 import { SELECTORS } from "./selectors.js";
 
+export interface AccountInfo {
+  name: string;
+  email: string;
+}
+
 export const InputExtractor = {
   /**
    * Extracts the prompt text from the input area.
    * If the prompt contains code blocks delimited by triple backticks,
    * they will be replaced with placeholders while preserving other text.
    *
-   * @returns {string} - The extracted prompt text or empty string if not found
+   * @returns The extracted prompt text or empty string if not found
    */
-  getPromptText: function () {
-    const promptElement = document.querySelector(SELECTORS.PROMPT_INPUT);
+  getPromptText(): string {
+    const promptElement = document.querySelector<HTMLElement>(SELECTORS.PROMPT_INPUT);
     if (promptElement) {
       const text = promptElement.innerText.trim();
 
-      // Process codeblocks using Utils
       const result = Utils.processCodeblocks(text);
 
       if (result.hasCodeblocks) {
@@ -28,7 +32,7 @@ export const InputExtractor = {
       return text;
     } else {
       console.warn(`${Utils.getPrefix()} Could not find prompt input element ('${SELECTORS.PROMPT_INPUT}').`);
-      return ""; // Return empty string if not found
+      return "";
     }
   },
 
@@ -37,14 +41,13 @@ export const InputExtractor = {
    * This is useful for title comparison when the main getPromptText() returns
    * a truncated version with [attached blockcode] placeholder.
    *
-   * @returns {string} - The original prompt text limited to 200 characters, or empty string if not found
+   * @returns The original prompt text limited to 200 characters, or empty string if not found
    */
-  getOriginalPromptText: function () {
-    const promptElement = document.querySelector(SELECTORS.PROMPT_INPUT);
+  getOriginalPromptText(): string {
+    const promptElement = document.querySelector<HTMLElement>(SELECTORS.PROMPT_INPUT);
     if (promptElement) {
       const text = promptElement.innerText.trim();
 
-      // Limit to 200 characters to avoid memory issues and provide reasonable comparison length
       const limitedText = text.length > 200 ? text.substring(0, 200) : text;
 
       console.log(
@@ -60,40 +63,38 @@ export const InputExtractor = {
   /**
    * Extracts the filenames of attached files from the UI.
    *
-   * @returns {string[]} - Array of filenames (strings) or empty array if none found
+   * @returns Array of filenames (strings) or empty array if none found
    */
-  getAttachedFiles: function () {
-    const fileElements = document.querySelectorAll(SELECTORS.ATTACHED_FILE);
+  getAttachedFiles(): string[] {
+    const fileElements = document.querySelectorAll<HTMLElement>(SELECTORS.ATTACHED_FILE);
     if (fileElements.length > 0) {
       const filenames = Array.from(fileElements).map((el) => {
-        // Prefer the 'title' attribute as it usually contains the full name
-        return el.getAttribute("title") || el.innerText.trim();
+        return el.getAttribute("title") ?? el.innerText.trim();
       });
       console.log(`${Utils.getPrefix()} Extracted attached filenames:`, filenames);
       return filenames;
     } else {
       console.log(`${Utils.getPrefix()} No attached file elements found.`);
-      return []; // Return empty array if none found
+      return [];
     }
   },
 
   /**
    * Extracts the user account name and email from the UI.
    *
-   * @returns {Object} - Object with name and email properties
+   * @returns Object with name and email properties
    */
-  getAccountInfo: function () {
+  getAccountInfo(): AccountInfo {
     console.log(`${Utils.getPrefix()} Attempting to extract account information...`);
 
-    // Strategy 1: Find by link to accounts.google.com with aria-label containing email
-    const accountLinks = Array.from(document.querySelectorAll(SELECTORS.ACCOUNT_LINK));
-    let accountElement = null;
-    let ariaLabel = null;
+    const accountLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>(SELECTORS.ACCOUNT_LINK));
+    let accountElement: Element | null = null;
+    let ariaLabel: string | null = null;
 
-    // Check links to accounts.google.com that have aria-labels
+    // Strategy 1: Find by link to accounts.google.com with aria-label containing email
     for (const link of accountLinks) {
       const label = link.getAttribute("aria-label");
-      if (label && label.indexOf("@") !== -1) {
+      if (label?.includes("@")) {
         accountElement = link;
         ariaLabel = label;
         console.log(
@@ -105,12 +106,12 @@ export const InputExtractor = {
 
     // Strategy 2: Find by profile image
     if (!accountElement) {
-      const profileImages = document.querySelectorAll(SELECTORS.PROFILE_IMAGE);
+      const profileImages = document.querySelectorAll<HTMLImageElement>(SELECTORS.PROFILE_IMAGE);
       for (const img of profileImages) {
-        const parent = img.closest("a[aria-label]");
+        const parent = img.closest<HTMLAnchorElement>("a[aria-label]");
         if (parent) {
           const label = parent.getAttribute("aria-label");
-          if (label && label.indexOf("@") !== -1) {
+          if (label?.includes("@")) {
             accountElement = parent;
             ariaLabel = label;
             console.log(
@@ -124,13 +125,12 @@ export const InputExtractor = {
 
     // Strategy 3: Find by user menu structure
     if (!accountElement) {
-      // Look for common Google account menu container classes
       const potentialContainers = document.querySelectorAll(SELECTORS.ACCOUNT_CONTAINER);
       for (const container of potentialContainers) {
-        const accountLink = container.querySelector("a[aria-label]");
+        const accountLink = container.querySelector<HTMLAnchorElement>("a[aria-label]");
         if (accountLink) {
           const label = accountLink.getAttribute("aria-label");
-          if (label && label.indexOf("@") !== -1) {
+          if (label?.includes("@")) {
             accountElement = accountLink;
             ariaLabel = label;
             console.log(`${Utils.getPrefix()} Found account element via container class structure`);
@@ -140,9 +140,8 @@ export const InputExtractor = {
       }
     }
 
-    // If we still haven't found it, try a broader approach
+    // Strategy 4: Broader approach — any element with an aria-label containing an email address
     if (!accountElement) {
-      // Look for ANY element with an aria-label containing an email address
       const elementsWithAriaLabel = document.querySelectorAll("[aria-label]");
       const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/;
 
@@ -157,11 +156,9 @@ export const InputExtractor = {
       }
     }
 
-    // If we found an element with account info, parse it
     if (accountElement && ariaLabel) {
       console.log(`${Utils.getPrefix()} Found aria-label with potential account info: "${ariaLabel}"`);
       try {
-        // Extract email using regex
         const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/;
         const emailMatch = ariaLabel.match(emailRegex);
 
@@ -172,21 +169,18 @@ export const InputExtractor = {
 
         const email = emailMatch[0];
 
-        // Extract name - try with parentheses pattern first
         let name = "Unknown";
         const parenthesesPattern = /[^:]*:\s*(.*?)\s+\([^)]*@[^)]*\)/i;
         const nameMatch = ariaLabel.match(parenthesesPattern);
 
-        if (nameMatch && nameMatch[1]) {
+        if (nameMatch?.[1]) {
           name = nameMatch[1].trim();
         } else {
-          // Alternative: Try to extract name by removing email and common prefixes
           const withoutEmail = ariaLabel.replace(email, "").trim();
           const colonIndex = withoutEmail.lastIndexOf(":");
 
           if (colonIndex !== -1) {
             name = withoutEmail.substring(colonIndex + 1).trim();
-            // Clean up remaining punctuation and parentheses
             name = name.replace(/^\s*[(:\-–—]\s*|\s*[)\-–—]\s*$/g, "");
           }
         }
@@ -196,7 +190,6 @@ export const InputExtractor = {
         );
         return { name, email };
       } catch (e) {
-        // Log error using standard prefix
         console.error(`${Utils.getPrefix()} Error parsing account information:`, e);
         return { name: "Unknown", email: "Unknown" };
       }

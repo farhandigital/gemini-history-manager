@@ -13,7 +13,9 @@ export const MODEL_NAMES = {
   "2.5 Flash": "2.5 Flash",
   "2.5 Pro": "2.5 Pro",
   Personalization: "Personalization",
-};
+} as const;
+
+export type ModelName = (typeof MODEL_NAMES)[keyof typeof MODEL_NAMES];
 
 /**
  * TOOL_NAMES
@@ -22,7 +24,7 @@ export const MODEL_NAMES = {
  *
  * Keys are plain JS strings used as substring match targets.
  * The case-insensitive matching logic lives in the caller — see
- * ModelDetector.normalizeTool() in model-detector.js.
+ * ModelDetector.normalizeTool() in model-detector.ts.
  * Values are the canonical tool names stored in history.
  */
 export const TOOL_NAMES = {
@@ -32,7 +34,9 @@ export const TOOL_NAMES = {
   Canvas: "Canvas",
   "Guided Learning": "Guided Learning",
   "Dynamic view": "Dynamic view",
-};
+} as const;
+
+export type ToolName = (typeof TOOL_NAMES)[keyof typeof TOOL_NAMES];
 
 /**
  * BROWSER_ACTIONS
@@ -41,7 +45,9 @@ export const TOOL_NAMES = {
  */
 export const BROWSER_ACTIONS = {
   UPDATE_HISTORY_COUNT: "updateHistoryCount",
-};
+} as const;
+
+export type BrowserAction = (typeof BROWSER_ACTIONS)[keyof typeof BROWSER_ACTIONS];
 
 /**
  * GEMINI_PLANS
@@ -50,13 +56,15 @@ export const BROWSER_ACTIONS = {
 export const GEMINI_PLANS = {
   PRO: "Pro",
   FREE: "Free",
-};
+} as const;
+
+export type GeminiPlan = (typeof GEMINI_PLANS)[keyof typeof GEMINI_PLANS];
 
 /**
  * ERROR_PATTERNS
  * Lowercase substrings used to identify Gemini crash/error messages in snack bars.
  */
-export const ERROR_PATTERNS = ["went wrong", "try again"];
+export const ERROR_PATTERNS = ["went wrong", "try again"] as const;
 
 /**
  * STATUS_TYPES
@@ -64,7 +72,7 @@ export const ERROR_PATTERNS = ["went wrong", "try again"];
  * applied to the indicator element that controls its icon and colour theme.
  *
  * CROSS-REFERENCE: If you add a new status type here, make sure to add its
- * corresponding CSS rules for the icon and style in `status-indicator.js`.
+ * corresponding CSS rules for the icon and style in `status-indicator.ts`.
  */
 export const STATUS_TYPES = {
   INFO: "info",
@@ -72,4 +80,6 @@ export const STATUS_TYPES = {
   WARNING: "warning",
   ERROR: "error",
   LOADING: "loading",
-};
+} as const;
+
+export type StatusType = (typeof STATUS_TYPES)[keyof typeof STATUS_TYPES];

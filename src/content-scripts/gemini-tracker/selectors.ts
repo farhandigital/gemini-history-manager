@@ -80,16 +80,16 @@ export const SELECTORS = {
   // string: one is used for element.id assignment, the other for element.className.
   // Do not merge them — they serve different DOM APIs and must remain separate.
   //
-  // Note: the CSS block in status-indicator.js hardcodes these same class names
+  // Note: the CSS block in status-indicator.ts hardcodes these same class names
   // directly in the template literal for readability. If you rename any of the
-  // constants below, remember to update the CSS template in status-indicator.js
+  // constants below, remember to update the CSS template in status-indicator.ts
   // as well (search for the same string).
   STATUS_INDICATOR_ID: "gemini-history-status",
   STATUS_INDICATOR_CLASS: "gemini-history-status",
   STATUS_INDICATOR_HIDDEN: "hidden",
   STATUS_ICON_ELEMENT: "status-icon",
   STATUS_MESSAGE_ELEMENT: "status-message",
-};
+} as const;
 
 /**
  * ARIA_LABELS
@@ -97,4 +97,4 @@ export const SELECTORS = {
  */
 export const ARIA_LABELS = {
   STOP_RESPONSE: "Stop response",
-};
+} as const;
