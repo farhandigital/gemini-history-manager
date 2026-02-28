@@ -32,16 +32,56 @@ export const HistoryManager = {
       browser.storage.local
         .get(CONFIG.STORAGE_KEY)
         .then((data) => {
-          const history = (data as Record<string, unknown>)[CONFIG.STORAGE_KEY] ?? [];
-          if (Array.isArray(history)) {
-            console.log(`${Utils.getPrefix()} History loaded successfully. Found ${history.length} entries.`);
-            resolve(history as HistoryEntry[]);
-          } else {
+          const raw = (data as Record<string, unknown>)[CONFIG.STORAGE_KEY] ?? [];
+          if (!Array.isArray(raw)) {
             console.warn(
               `${Utils.getPrefix()} Stored history data is not an array. Returning empty history.`
             );
             resolve([]);
+            return;
           }
+
+          // Validate and normalize each entry, discarding malformed ones
+          const normalized: HistoryEntry[] = [];
+          for (const item of raw) {
+            if (item === null || typeof item !== "object") {
+              console.warn(`${Utils.getPrefix()} Skipping non-object history entry:`, item);
+              continue;
+            }
+            const entry = item as Record<string, unknown>;
+            if (
+              typeof entry["timestamp"] !== "string" ||
+              typeof entry["url"] !== "string" ||
+              typeof entry["title"] !== "string" ||
+              typeof entry["model"] !== "string"
+            ) {
+              console.warn(`${Utils.getPrefix()} Skipping history entry missing required fields:`, entry);
+              continue;
+            }
+            normalized.push({
+              timestamp: entry["timestamp"] as string,
+              url: entry["url"] as string,
+              title: entry["title"] as string,
+              model: entry["model"] as string,
+              tool: typeof entry["tool"] === "string" ? entry["tool"] : null,
+              prompt: typeof entry["prompt"] === "string" ? entry["prompt"] : null,
+              attachedFiles: Array.isArray(entry["attachedFiles"])
+                ? (entry["attachedFiles"] as unknown[]).filter((f): f is string => typeof f === "string")
+                : [],
+              accountName: typeof entry["accountName"] === "string" ? entry["accountName"] : null,
+              accountEmail: typeof entry["accountEmail"] === "string" ? entry["accountEmail"] : null,
+              geminiPlan: typeof entry["geminiPlan"] === "string" ? entry["geminiPlan"] : null,
+              gemId: typeof entry["gemId"] === "string" ? entry["gemId"] : null,
+              gemName: typeof entry["gemName"] === "string" ? entry["gemName"] : null,
+              gemUrl: typeof entry["gemUrl"] === "string" ? entry["gemUrl"] : null,
+              _v: typeof entry["_v"] === "number" ? entry["_v"] : CONFIG.SCHEMA_VERSION,
+            });
+          }
+
+          console.log(
+            `${Utils.getPrefix()} History loaded successfully. Found ${normalized.length} valid entries (${raw.length - normalized.length} skipped).`
+          );
+          resolve(normalized);
         })
         .catch((error: unknown) => {
           console.error(`${Utils.getPrefix()} Error loading history:`, error);
@@ -157,8 +197,9 @@ export const HistoryManager = {
     try {
       const history = await this.loadHistory();
 
-      if (history.some((entry) => entry.url === url)) {
-        console.log(`${Utils.getPrefix()} Duplicate URL detected, skipping entry:`, url);
+      const canonicalUrl = Utils.getCanonicalChatUrl(url);
+      if (history.some((entry) => Utils.getCanonicalChatUrl(entry.url) === canonicalUrl)) {
+        console.log(`${Utils.getPrefix()} Duplicate URL detected (canonical: ${canonicalUrl}), skipping entry:`, url);
         StatusIndicator.show("Chat already in history", "info");
         return false;
       }

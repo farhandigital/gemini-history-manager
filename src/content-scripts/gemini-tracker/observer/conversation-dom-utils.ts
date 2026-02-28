@@ -143,10 +143,15 @@ export const ConversationDomUtils = {
 
     console.log(`${Utils.getPrefix()} Conversation list not found. Setting up observer to watch for it...`);
 
+    // Shared flag: set to true once the conversation list is found and callback is invoked,
+    // so the timeout handler can skip redundant disconnect/warning.
+    let foundOrHandled = false;
+
     const observer = new MutationObserver((_mutations, obs) => {
       const conversationList = document.querySelector(conversationListSelector);
       if (conversationList) {
         console.log(`${Utils.getPrefix()} Conversation list element found in DOM`);
+        foundOrHandled = true;
         obs.disconnect();
         callback(conversationList);
       }
@@ -155,12 +160,11 @@ export const ConversationDomUtils = {
     observer.observe(document.body, { childList: true, subtree: true });
 
     setTimeout(() => {
-      const conversationList = document.querySelector(conversationListSelector);
-      if (!conversationList) {
+      if (!foundOrHandled) {
         console.warn(`${Utils.getPrefix()} Conversation list element not found after timeout`);
         StatusIndicator.show("Warning: Gemini recent chats not detected", "warning", 0);
+        observer.disconnect();
       }
-      observer.disconnect();
     }, 10000);
   },
 };

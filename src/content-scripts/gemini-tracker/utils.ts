@@ -22,12 +22,7 @@ export const Utils = {
    * @returns Formatted timestamp string in ISO 8601 UTC format (YYYY-MM-DDTHH:MM:SSZ)
    */
   getCurrentTimestamp(): string {
-    try {
-      return new Date().toISOString();
-    } catch (e) {
-      console.error(`${Utils.getPrefix()} Error getting ISO UTC timestamp:`, e);
-      return new Date().toISOString();
-    }
+    return new Date().toISOString();
   },
 
   /**
@@ -45,6 +40,24 @@ export const Utils = {
     const regularChatUrlPattern = /^https:\/\/gemini\.google\.com(\/u\/\d+)?\/app\/[a-f0-9]+(\?.*)?$/;
     const gemChatUrlPattern = /^https:\/\/gemini\.google\.com(\/u\/\d+)?\/gem\/[a-f0-9]+\/[a-f0-9]+(\?.*)?$/;
     return regularChatUrlPattern.test(url) || gemChatUrlPattern.test(url);
+  },
+
+  /**
+   * Returns a canonical form of a Gemini chat URL by stripping query parameters
+   * and the fragment. Used for deduplication so that the same chat with different
+   * query strings is not stored twice.
+   *
+   * @param url - The URL to canonicalize
+   * @returns The URL without query parameters or fragment
+   */
+  getCanonicalChatUrl(url: string): string {
+    try {
+      const parsed = new URL(url);
+      return `${parsed.origin}${parsed.pathname}`;
+    } catch {
+      // If URL parsing fails, strip query/fragment with a simple regex
+      return url.replace(/[?#].*$/, "");
+    }
   },
 
   /**

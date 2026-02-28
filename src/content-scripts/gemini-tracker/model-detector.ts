@@ -224,10 +224,15 @@ export const ModelDetector = {
   },
 
   /**
-   * Normalizes a tool name to a consistent format.
+   * Normalizes a tool name to a consistent format by matching against known TOOL_NAMES keys.
+   * If a match is found, the corresponding TOOL_NAMES value is returned and logged via
+   * Utils.getPrefix. If no match is found, the original rawToolName is returned unchanged.
    *
-   * @param rawToolName - The raw tool name from the UI
-   * @returns The normalized tool name
+   * Note: an empty string input is intentionally returned as-is (no normalization is
+   * attempted and no console output is produced for empty input).
+   *
+   * @param rawToolName - The raw tool name from the UI; may be an empty string
+   * @returns The normalized tool name, or the original rawToolName (including "") if no match
    */
   normalizeTool(rawToolName: string): string {
     if (!rawToolName) return rawToolName;

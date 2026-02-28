@@ -10,6 +10,8 @@ import { SELECTORS } from "../selectors.js";
 interface PriorityContext {
   chatFinished: boolean;
   titleProcessed: boolean;
+  /** True once the 3-second stop-button fallback timer has been scheduled. */
+  stopFallbackScheduled: boolean;
 }
 
 /**
@@ -89,19 +91,24 @@ export const DomObserver = {
           console.log(`${Utils.getPrefix()} Stop button disappeared - chat generation likely finished`);
           priorityContext.chatFinished = true;
 
-          // Give title observers 3 seconds to respond before taking over
-          setTimeout(() => {
-            if (STATE.stopButtonObserver && !priorityContext.titleProcessed) {
-              console.log(
-                `${Utils.getPrefix()} Title observers didn't respond within 3 seconds, stop button observer taking over`
-              );
-              onChatFinished();
-            } else if (priorityContext.titleProcessed) {
-              console.log(
-                `${Utils.getPrefix()} Title observers already processed the title, stop button observer backing off`
-              );
-            }
-          }, 3000);
+          // Give title observers 3 seconds to respond before taking over.
+          // Only schedule the fallback timer once — subsequent mutations that also
+          // see the stop button gone must not queue additional timers.
+          if (!priorityContext.stopFallbackScheduled) {
+            priorityContext.stopFallbackScheduled = true;
+            setTimeout(() => {
+              if (STATE.stopButtonObserver && !priorityContext.titleProcessed) {
+                console.log(
+                  `${Utils.getPrefix()} Title observers didn't respond within 3 seconds, stop button observer taking over`
+                );
+                onChatFinished();
+              } else if (priorityContext.titleProcessed) {
+                console.log(
+                  `${Utils.getPrefix()} Title observers already processed the title, stop button observer backing off`
+                );
+              }
+            }, 3000);
+          }
         }
       } catch (err: unknown) {
         console.error(`${Utils.getPrefix()} Error in stop button observer callback:`, err);
@@ -240,6 +247,7 @@ export const DomObserver = {
     const priorityContext: PriorityContext = {
       chatFinished: false,
       titleProcessed: false,
+      stopFallbackScheduled: false,
     };
 
     /**
