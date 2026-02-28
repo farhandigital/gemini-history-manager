@@ -10,26 +10,29 @@
   </div>
 </template>
 
-<script setup>
-import { defineProps, defineEmits } from "vue";
+<script setup lang="ts">
+interface ErrorState {
+  hasError: boolean;
+  message: string;
+}
 
-// Define props
-defineProps({
-  isLoading: {
-    type: Boolean,
-    default: false,
-  },
-  errorState: {
-    type: Object,
-    default: () => ({ hasError: false, message: "" }),
-  },
+interface Props {
+  isLoading?: boolean;
+  errorState?: ErrorState;
+}
+
+withDefaults(defineProps<Props>(), {
+  isLoading: false,
+  errorState: () => ({ hasError: false, message: "" }),
 });
 
 // Define emits
-const emit = defineEmits(["retry"]);
+const emit = defineEmits<{
+  retry: [];
+}>();
 
 // Event handlers
-function retryInitialization() {
+function retryInitialization(): void {
   emit("retry");
 }
 </script>

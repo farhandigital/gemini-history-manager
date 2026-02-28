@@ -41,15 +41,14 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
+import type { Ref } from "vue";
+import type { Browser } from "@wxt-dev/browser";
 import dayjs from "dayjs"; // Direct import for filename formatting
 import {
   Logger,
   parseTimestamp,
-  formatDateForDisplay,
-  initializeTheme,
-  applyTheme,
   toggleTheme,
   initDayjsPlugins,
   updateThemeToggleIcon,
@@ -65,6 +64,24 @@ import LoadingError from "./components/LoadingError.vue";
 // Initialize dayjs plugins before using any dayjs functionality
 initDayjsPlugins();
 
+// --- Types ---
+interface ConversationEntry {
+  url: string;
+  title?: string;
+  timestamp: string | number;
+  model?: string;
+  tool?: string | null;
+}
+
+interface ErrorState {
+  hasError: boolean;
+  message: string;
+}
+
+interface HeaderInstance {
+  themeIconSvg: SVGElement | null;
+}
+
 // --- Constants ---
 const STORAGE_KEY = "geminiChatHistory";
 const MAX_PREVIEW_CONVERSATIONS = 5;
@@ -73,31 +90,28 @@ const MAX_PREVIEW_CONVERSATIONS = 5;
 const totalConversations = ref(0);
 const mostUsedModelText = ref("-");
 const lastConversationTimeText = ref("-");
-const recentConversationsList = ref([]);
+const recentConversationsList: Ref<ConversationEntry[]> = ref([]);
 const extensionVersion = ref("Gemini History Manager"); // Default, will be updated
 const currentTheme = ref("light"); // Default, will be updated
-const headerComponent = ref(null); // Ref for the Header component to access themeIconSvg
+const headerComponent: Ref<HeaderInstance | null> = ref(null); // Ref for the Header component to access themeIconSvg
 
 const isLoading = ref(true);
-const errorState = ref({ hasError: false, message: "" });
+const errorState: Ref<ErrorState> = ref({ hasError: false, message: "" });
 
 /**
  * Handles real-time storage changes for live popup updates.
  * This listener is called whenever browser.storage.local changes,
  * allowing the popup to stay in sync while it's open.
- *
- * @param {Object} changes - Object containing changed keys with oldValue/newValue
- * @param {string} areaName - The storage area that changed ('local', 'sync', etc.)
  */
-function handleStorageChange(changes, areaName) {
+function handleStorageChange(changes: Record<string, Browser.storage.StorageChange>, areaName: string): void {
   // Only react to local storage changes for our history key
   if (areaName !== "local" || !changes[STORAGE_KEY]) {
     return;
   }
 
   const { oldValue, newValue } = changes[STORAGE_KEY];
-  const previousCount = Array.isArray(oldValue) ? oldValue.length : 0;
-  const newCount = Array.isArray(newValue) ? newValue.length : 0;
+  const previousCount = Array.isArray(oldValue) ? (oldValue as unknown[]).length : 0;
+  const newCount = Array.isArray(newValue) ? (newValue as unknown[]).length : 0;
 
   Logger.log("App", "Storage changed in popup", {
     previousCount,
@@ -105,8 +119,10 @@ function handleStorageChange(changes, areaName) {
     component: "popup",
   });
 
+  const newEntries = Array.isArray(newValue) ? (newValue as ConversationEntry[]) : [];
+
   // Sort the new data by timestamp (most recent first)
-  const sortedHistory = [...(newValue || [])].sort(
+  const sortedHistory = [...newEntries].sort(
     (a, b) => parseTimestamp(b.timestamp).valueOf() - parseTimestamp(a.timestamp).valueOf()
   );
 
@@ -158,33 +174,32 @@ onUnmounted(() => {
 /**
  * Initializes the popup by loading extension version, theme, and user history data.
  * Handles theme icon update and error state.
- * @async
- * @returns {Promise<void>}
  */
-async function initializePopup() {
+async function initializePopup(): Promise<void> {
   Logger.debug("App", "Starting popup initialization");
   isLoading.value = true;
   errorState.value = { hasError: false, message: "" };
   try {
     await loadExtensionVersion();
-    // Use the theme that was already applied by script in main.js before Vue mounts
+    // Use the theme that was already applied by script in main.ts before Vue mounts
 
-    // Get the theme that was already applied during initialization in main.js
+    // Get the theme that was already applied during initialization in main.ts
     const themeValue =
-      localStorage.getItem("popup_initialized_theme") || localStorage.getItem(THEME_STORAGE_KEY) || "light";
+      localStorage.getItem("popup_initialized_theme") ?? localStorage.getItem(THEME_STORAGE_KEY) ?? "light";
     currentTheme.value = themeValue;
     Logger.log("App", "Using pre-initialized theme", { theme: themeValue });
 
     // Apply theme to icon after component is mounted
-    if (headerComponent.value) {
-      updateThemeToggleIcon(themeValue, headerComponent.value.themeIconSvg);
+    if (headerComponent.value?.themeIconSvg) {
+      // SVGElement and HTMLElement share the style interface used by updateThemeToggleIcon
+      updateThemeToggleIcon(themeValue, headerComponent.value.themeIconSvg as unknown as HTMLElement);
       Logger.debug("App", "Theme icon updated", { theme: themeValue });
     } else {
       Logger.warn("App", "Header component reference not available, cannot update theme icon");
     }
 
     const historyData = await loadHistoryDataFromStorage();
-    if (historyData && historyData.length > 0) {
+    if (historyData.length > 0) {
       Logger.log("App", "History data loaded successfully", { count: historyData.length });
       updateStatsDisplay(historyData);
       updateRecentConversationsDisplay(historyData);
@@ -204,22 +219,20 @@ async function initializePopup() {
 /**
  * Retries the popup initialization process, typically after an error.
  */
-function retryInitialization() {
+function retryInitialization(): void {
   Logger.log("App", "User initiated retry of popup initialization");
-  initializePopup();
+  void initializePopup();
 }
 
 /**
  * Loads the extension version from the manifest and updates the UI.
  * Handles errors gracefully and logs version info.
- * @async
- * @returns {Promise<void>}
  */
-async function loadExtensionVersion() {
+async function loadExtensionVersion(): Promise<void> {
   Logger.debug("App", "Loading extension version from manifest");
   try {
     const manifestData = browser.runtime.getManifest();
-    if (manifestData && manifestData.version) {
+    if (manifestData.version) {
       extensionVersion.value = `Gemini History Manager v${manifestData.version}`;
       Logger.log("App", "Extension version loaded", { version: manifestData.version });
     } else {
@@ -233,15 +246,14 @@ async function loadExtensionVersion() {
 
 /**
  * Loads chat history data from browser storage, sorts it, and logs relevant info.
- * @async
- * @returns {Promise<Array>} Resolves with the loaded and sorted history data array.
  * @throws Will throw if loading from storage fails.
  */
-async function loadHistoryDataFromStorage() {
+async function loadHistoryDataFromStorage(): Promise<ConversationEntry[]> {
   Logger.debug("App", "Loading history data from browser storage");
   try {
     const data = await browser.storage.local.get(STORAGE_KEY);
-    const history = data[STORAGE_KEY] || [];
+    const rawHistory: unknown = data[STORAGE_KEY];
+    const history: ConversationEntry[] = Array.isArray(rawHistory) ? (rawHistory as ConversationEntry[]) : [];
 
     // Sort by timestamp descending (most recent first)
     if (history.length > 0) {
@@ -252,7 +264,7 @@ async function loadHistoryDataFromStorage() {
     Logger.log("App", "History data retrieved from storage", {
       entryCount: history.length,
       storageKey: STORAGE_KEY,
-      newestEntry: history.length > 0 ? history[0].timestamp : null,
+      newestEntry: history.length > 0 ? history[0]?.timestamp : null,
     });
 
     return history;
@@ -265,16 +277,15 @@ async function loadHistoryDataFromStorage() {
 // --- UI Update Functions ---
 /**
  * Updates statistics display (total conversations, most used model, last conversation time) based on history data.
- * @param {Array} historyData - The array of conversation history objects.
  */
-function updateStatsDisplay(historyData) {
+function updateStatsDisplay(historyData: ConversationEntry[]): void {
   Logger.debug("App", "Updating statistics display with history data");
   totalConversations.value = historyData.length;
 
   // Calculate model usage statistics
-  const modelCounts = historyData.reduce((acc, entry) => {
-    const model = entry.model || "Unknown";
-    acc[model] = (acc[model] || 0) + 1;
+  const modelCounts = historyData.reduce<Record<string, number>>((acc, entry) => {
+    const model = entry.model ?? "Unknown";
+    acc[model] = (acc[model] ?? 0) + 1;
     return acc;
   }, {});
 
@@ -292,18 +303,19 @@ function updateStatsDisplay(historyData) {
   });
 
   // Format last conversation time
-  if (historyData.length > 0 && historyData[0].timestamp) {
-    const lastDateDayjs = parseTimestamp(historyData[0].timestamp);
+  const firstEntry = historyData[0];
+  if (firstEntry?.timestamp) {
+    const lastDateDayjs = parseTimestamp(firstEntry.timestamp);
     if (lastDateDayjs.isValid() && typeof lastDateDayjs.fromNow === "function") {
       lastConversationTimeText.value = lastDateDayjs.fromNow();
       Logger.log("App", "Last conversation time formatted", {
         formatted: lastConversationTimeText.value,
-        timestamp: historyData[0].timestamp,
+        timestamp: firstEntry.timestamp,
       });
     } else {
       lastConversationTimeText.value = "Invalid date";
       Logger.warn("App", "Invalid timestamp for last conversation", {
-        timestamp: historyData[0].timestamp,
+        timestamp: firstEntry.timestamp,
       });
     }
   } else {
@@ -314,9 +326,8 @@ function updateStatsDisplay(historyData) {
 
 /**
  * Updates the list of recent conversations displayed in the popup.
- * @param {Array} historyData - The array of conversation history objects.
  */
-function updateRecentConversationsDisplay(historyData) {
+function updateRecentConversationsDisplay(historyData: ConversationEntry[]): void {
   const displayCount = Math.min(historyData.length, MAX_PREVIEW_CONVERSATIONS);
   Logger.log("App", "Updating recent conversations display", {
     total: historyData.length,
@@ -330,11 +341,12 @@ function updateRecentConversationsDisplay(historyData) {
 // --- Event Handlers ---
 /**
  * Handles the theme toggle action, switching between light and dark themes.
- * @param {SVGElement} themeIconSvgElement - The SVG element for the theme icon.
  */
-function handleThemeToggle(themeIconSvgElement) {
+function handleThemeToggle(themeIconSvgElement: SVGElement | null): void {
   Logger.log("App", "Theme toggle button clicked", { currentTheme: currentTheme.value });
-  currentTheme.value = toggleTheme(currentTheme.value, themeIconSvgElement);
+  // SVGElement and HTMLElement share the style interface used by toggleTheme/applyTheme
+  const iconEl = themeIconSvgElement as unknown as HTMLElement | undefined;
+  currentTheme.value = toggleTheme(currentTheme.value, iconEl);
   Logger.log("App", "Theme toggled", { newTheme: currentTheme.value });
   // applyTheme is called within toggleTheme
 }
@@ -342,7 +354,7 @@ function handleThemeToggle(themeIconSvgElement) {
 /**
  * Handles the event to open the full dashboard page from the popup.
  */
-function handleOpenFullPage() {
+function handleOpenFullPage(): void {
   Logger.log("App", "Open full dashboard page button clicked");
   browser.runtime
     .sendMessage({ action: "openHistoryPage" })
@@ -350,22 +362,20 @@ function handleOpenFullPage() {
       Logger.debug("App", "Message sent to open history page");
       window.close();
     })
-    .catch((error) => {
+    .catch((error: unknown) => {
       Logger.error("App", "Error sending message to open history page", error);
       // Try alternative method to open the page
       browser.tabs
-        .create({ url: browser.runtime.getURL("dashboard.html") })
+        .create({ url: browser.runtime.getURL("/dashboard.html") })
         .then(() => window.close())
-        .catch((err) => Logger.error("App", "Failed to open dashboard page via tabs API", err));
+        .catch((err: unknown) => Logger.error("App", "Failed to open dashboard page via tabs API", err));
     });
 }
 
 /**
  * Handles exporting chat history to a JSON file. Loads history, creates a file, and triggers download.
- * @async
- * @returns {Promise<void>}
  */
-async function handleExportHistory() {
+async function handleExportHistory(): Promise<void> {
   Logger.log("App", "Export history button clicked");
   try {
     Logger.debug("App", "Loading history data for export");
@@ -395,7 +405,7 @@ async function handleExportHistory() {
     URL.revokeObjectURL(objectURL);
 
     Logger.log("App", "History exported successfully", {
-      filename: filename,
+      filename,
       sizeBytes: blob.size,
       entryCount: historyData.length,
     });
@@ -408,17 +418,17 @@ async function handleExportHistory() {
 /**
  * Handles the import history button click, redirects user to dashboard import page.
  */
-function handleImportHistory() {
+function handleImportHistory(): void {
   Logger.log("App", "Import history button clicked", { redirectTarget: "dashboard" });
   browser.tabs
     .create({
-      url: browser.runtime.getURL("dashboard.html?action=import"),
+      url: browser.runtime.getURL("/dashboard.html?action=import"),
     })
     .then(() => {
       Logger.debug("App", "Dashboard page opened with import action");
       window.close();
     })
-    .catch((error) => {
+    .catch((error: unknown) => {
       Logger.error("App", "Failed to open dashboard for import", error);
       // Alert user of the failure
       alert("Failed to open dashboard page for import. Please try again.");
@@ -428,7 +438,7 @@ function handleImportHistory() {
 /**
  * Handles the start chat action, opening a new Gemini chat tab.
  */
-function handleStartChat() {
+function handleStartChat(): void {
   Logger.log("App", "Start new Gemini chat button clicked");
   browser.tabs
     .create({ url: "https://gemini.google.com/app" })
@@ -436,19 +446,18 @@ function handleStartChat() {
       Logger.debug("App", "New Gemini chat tab opened successfully");
       window.close();
     })
-    .catch((error) => {
+    .catch((error: unknown) => {
       Logger.error("App", "Failed to open new Gemini chat tab", error);
     });
 }
 
 /**
  * Opens an existing conversation in a new browser tab.
- * @param {string} url - The URL of the conversation to open.
  */
-function openConversation(url) {
+function openConversation(url: string): void {
   Logger.log("App", "Opening existing conversation", { url });
 
-  if (!url || typeof url !== "string") {
+  if (!url) {
     Logger.warn("App", "Invalid conversation URL provided", { receivedUrl: url });
     return;
   }
@@ -459,25 +468,26 @@ function openConversation(url) {
       Logger.debug("App", "Opened conversation in new tab");
       window.close();
     })
-    .catch((error) => {
+    .catch((error: unknown) => {
       Logger.error("App", "Failed to open conversation tab", error);
     });
 }
 
 // The importFileInput ref and handleFileImported method are placeholders
 // if we were to handle import directly in popup, but it's redirected.
-const importFileInput = ref(null);
+const importFileInput: Ref<HTMLInputElement | null> = ref(null);
+
 /**
  * Placeholder handler for file import events in the popup (actual import is redirected).
  * Logs file info if present.
- * @param {Event} event - The file input change event.
  */
-function handleFileImported(event) {
+function handleFileImported(event: Event): void {
   // This logic would be more complex and involve reading the file,
   // parsing JSON, merging with existing history, and saving.
   // Since import is redirected, this is mostly a placeholder.
-  if (event && event.target && event.target.files && event.target.files[0]) {
-    const file = event.target.files[0];
+  const target = event.target as HTMLInputElement | null;
+  const file = target?.files?.[0];
+  if (file) {
     Logger.debug("App", "File selected for import (handled by dashboard)", {
       name: file.name,
       size: file.size,
@@ -487,11 +497,4 @@ function handleFileImported(event) {
     Logger.warn("App", "File import triggered but no file selected or invalid event");
   }
 }
-
-// Expose methods to template (not strictly necessary with <script setup> for direct use in template)
-// but can be useful for clarity or if you need to call them from parent/child in complex scenarios.
-// For <script setup>, all top-level bindings are automatically exposed.
-
-// --- Utility Functions (already imported but good to remember their usage) ---
-// parseTimestamp, formatDateForDisplay, initializeTheme, applyTheme, toggleTheme are used directly.
 </script>
