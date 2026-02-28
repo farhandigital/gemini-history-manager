@@ -6,25 +6,22 @@ export const ObserverLifecycle = {
    * Disconnects an observer and returns null to clear the reference.
    * Prevents memory leaks and ensures clean state management.
    *
-   * @param {MutationObserver|null} observer - The observer to disconnect
-   * @returns {null} Always returns null to clear the reference
+   * @param observer - The observer to disconnect
+   * @returns Always returns null to clear the reference
    */
-  cleanupObserver: function (observer) {
+  cleanupObserver(observer: MutationObserver | null): null {
     if (observer) {
       observer.disconnect();
-      return null;
     }
-    return observer;
+    return null;
   },
 
   /**
    * Cleans up title-related observers and clears the isNewChatPending flag
    * only when observers were actually active.
-   *
-   * @returns {void}
    */
-  cleanupTitleObservers: function () {
-    const hadTitleObservers = STATE.titleObserver || STATE.secondaryTitleObserver;
+  cleanupTitleObservers(): void {
+    const hadTitleObservers = STATE.titleObserver ?? STATE.secondaryTitleObserver;
 
     STATE.titleObserver = this.cleanupObserver(STATE.titleObserver);
     STATE.secondaryTitleObserver = this.cleanupObserver(STATE.secondaryTitleObserver);
@@ -39,10 +36,8 @@ export const ObserverLifecycle = {
   /**
    * Disconnects all active observers to prevent memory leaks.
    * Covers the conversation list, title, secondary title, and stop button observers.
-   *
-   * @returns {void}
    */
-  cleanupAllObservers: function () {
+  cleanupAllObservers(): void {
     console.log(`${Utils.getPrefix()} Cleaning up all DOM observers...`);
     STATE.conversationListObserver = this.cleanupObserver(STATE.conversationListObserver);
     this.cleanupTitleObservers();

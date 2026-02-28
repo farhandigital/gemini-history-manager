@@ -3,22 +3,39 @@ import { Utils } from "./utils.js";
 import { StatusIndicator } from "./status-indicator.js";
 import { BROWSER_ACTIONS } from "./constants.js";
 
+export interface HistoryEntry {
+  timestamp: string;
+  url: string;
+  title: string;
+  model: string;
+  tool: string | null;
+  prompt: string | null;
+  attachedFiles: string[];
+  accountName: string | null;
+  accountEmail: string | null;
+  geminiPlan: string | null;
+  gemId: string | null;
+  gemName: string | null;
+  gemUrl: string | null;
+  _v: number;
+}
+
 export const HistoryManager = {
   /**
    * Loads chat history from browser storage.
    *
-   * @returns {Promise<Array>} - Promise resolving to array of history entries or empty array if none found or on error
+   * @returns Promise resolving to array of history entries or empty array if none found or on error
    */
-  loadHistory: function () {
+  loadHistory(): Promise<HistoryEntry[]> {
     console.log(`${Utils.getPrefix()} Loading history from storage...`);
     return new Promise((resolve) => {
       browser.storage.local
         .get(CONFIG.STORAGE_KEY)
         .then((data) => {
-          const history = data[CONFIG.STORAGE_KEY] || [];
+          const history = (data as Record<string, unknown>)[CONFIG.STORAGE_KEY] ?? [];
           if (Array.isArray(history)) {
             console.log(`${Utils.getPrefix()} History loaded successfully. Found ${history.length} entries.`);
-            resolve(history);
+            resolve(history as HistoryEntry[]);
           } else {
             console.warn(
               `${Utils.getPrefix()} Stored history data is not an array. Returning empty history.`
@@ -26,7 +43,7 @@ export const HistoryManager = {
             resolve([]);
           }
         })
-        .catch((error) => {
+        .catch((error: unknown) => {
           console.error(`${Utils.getPrefix()} Error loading history:`, error);
           StatusIndicator.show("Error loading chat history", "error");
           resolve([]);
@@ -36,10 +53,11 @@ export const HistoryManager = {
 
   /**
    * Saves chat history to browser storage.
-   * @param {Array} history - Array of history entries to save.
-   * @returns {Promise} Promise resolving when save is complete.
+   *
+   * @param history - Array of history entries to save.
+   * @returns Promise resolving when save is complete.
    */
-  saveHistory: function (history) {
+  saveHistory(history: HistoryEntry[]): Promise<void> {
     console.log(`${Utils.getPrefix()} Attempting to save history with ${history.length} entries...`);
     if (!Array.isArray(history)) {
       console.error(`${Utils.getPrefix()} Attempted to save non-array data. Aborting save.`);
@@ -51,15 +69,16 @@ export const HistoryManager = {
       .set({ [CONFIG.STORAGE_KEY]: history })
       .then(() => {
         console.log(`${Utils.getPrefix()} History saved successfully.`);
-        // Send message to background script to update badge
         browser.runtime
           .sendMessage({
             action: BROWSER_ACTIONS.UPDATE_HISTORY_COUNT,
             count: history.length,
           })
-          .catch((err) => console.error(`${Utils.getPrefix()} Error sending message to background:`, err));
+          .catch((err: unknown) =>
+            console.error(`${Utils.getPrefix()} Error sending message to background:`, err)
+          );
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         console.error(`${Utils.getPrefix()} Error saving history:`, error);
         StatusIndicator.show("Error saving chat history", "error");
         throw error;
@@ -70,37 +89,37 @@ export const HistoryManager = {
    * Adds a new entry to the chat history.
    * Validates input data and prevents duplicates based on URL.
    *
-   * @param {string} timestamp - ISO-formatted timestamp for the chat
-   * @param {string} url - URL of the chat
-   * @param {string} title - Title of the chat
-   * @param {string} model - Model name used for the chat
-   * @param {string|null} tool - Tool name used for the chat (if any)
-   * @param {string} prompt - User prompt text
-   * @param {Array} attachedFiles - Array of attached filenames
-   * @param {string} accountName - Name of the user account
-   * @param {string} accountEmail - Email of the user account
-   * @param {string|null} geminiPlan - The Gemini plan (Pro, Free, etc.) or null if unknown
-   * @param {string|null} gemId - ID of the Gem being used (if any)
-   * @param {string|null} gemName - Name of the Gem being used (if any)
-   * @param {string|null} gemUrl - URL of the Gem (if any)
-   * @returns {Promise<boolean>} - Promise resolving to true if entry was added, false if validation failed or duplicate detected
+   * @param timestamp - ISO-formatted timestamp for the chat
+   * @param url - URL of the chat
+   * @param title - Title of the chat
+   * @param model - Model name used for the chat
+   * @param tool - Tool name used for the chat (if any)
+   * @param prompt - User prompt text
+   * @param attachedFiles - Array of attached filenames
+   * @param accountName - Name of the user account
+   * @param accountEmail - Email of the user account
+   * @param geminiPlan - The Gemini plan (Pro, Free, etc.) or null if unknown
+   * @param gemId - ID of the Gem being used (if any)
+   * @param gemName - Name of the Gem being used (if any)
+   * @param gemUrl - URL of the Gem (if any)
+   * @returns Promise resolving to true if entry was added, false if validation failed or duplicate detected
    */
-  addHistoryEntry: async function (
-    timestamp,
-    url,
-    title,
-    model,
-    tool,
-    prompt,
-    attachedFiles,
-    accountName,
-    accountEmail,
-    geminiPlan,
-    gemId = null,
-    gemName = null,
-    gemUrl = null
-  ) {
-    const entryData = {
+  async addHistoryEntry(
+    timestamp: string,
+    url: string,
+    title: string,
+    model: string,
+    tool: string | null,
+    prompt: string | null,
+    attachedFiles: string[],
+    accountName: string | null,
+    accountEmail: string | null,
+    geminiPlan: string | null,
+    gemId: string | null = null,
+    gemName: string | null = null,
+    gemUrl: string | null = null
+  ): Promise<boolean> {
+    const entryData: HistoryEntry = {
       timestamp,
       url,
       title,
@@ -118,43 +137,38 @@ export const HistoryManager = {
     };
     console.log(`${Utils.getPrefix()} Attempting to add history entry:`, entryData);
 
-    // Basic validation (Title, URL, Timestamp, Model are still required)
     if (!timestamp || !url || !title || !model) {
-      // Log warning using standard prefix
       console.warn(
         `${Utils.getPrefix()} Attempted to add entry with missing essential data. Skipping.`,
         entryData
       );
       StatusIndicator.show("Chat history entry incomplete", "warning");
-      return false; // Indicate failure
+      return false;
     }
 
-    // Prevent adding entry if URL is invalid
     if (!Utils.isValidChatUrl(url)) {
-      // Log warning using standard prefix
       console.warn(
         `${Utils.getPrefix()} Attempted to add entry with invalid chat URL pattern "${url}". Skipping.`
       );
       StatusIndicator.show("Invalid chat URL", "warning");
-      return false; // Indicate failure
+      return false;
     }
 
     try {
       const history = await this.loadHistory();
 
-      // Prevent duplicates based on URL
       if (history.some((entry) => entry.url === url)) {
         console.log(`${Utils.getPrefix()} Duplicate URL detected, skipping entry:`, url);
         StatusIndicator.show("Chat already in history", "info");
-        return false; // Indicate failure (or already added)
+        return false;
       }
 
-      history.unshift(entryData); // Add to beginning
+      history.unshift(entryData);
       await this.saveHistory(history);
       console.log(`${Utils.getPrefix()} Successfully added history entry.`);
       StatusIndicator.show(`Chat "${title}" saved to history`, "success");
-      return true; // Indicate success
-    } catch (error) {
+      return true;
+    } catch (error: unknown) {
       console.error(`${Utils.getPrefix()} Error adding history entry:`, error);
       StatusIndicator.show("Failed to add chat to history", "error");
       return false;

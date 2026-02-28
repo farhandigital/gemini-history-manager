@@ -6,10 +6,8 @@ export const ObserverStateManager = {
   /**
    * Clears the subset of pending state variables related to the prompt context.
    * Does not touch gem-related state or the isNewChatPending flag.
-   *
-   * @returns {void}
    */
-  resetPendingPromptContext: function () {
+  resetPendingPromptContext(): void {
     STATE.pendingModelName = null;
     STATE.pendingTool = null;
     STATE.pendingPrompt = null;
@@ -22,10 +20,8 @@ export const ObserverStateManager = {
   /**
    * Clears all pending state variables.
    * Used when completely aborting the new chat tracking process.
-   *
-   * @returns {void}
    */
-  resetAllPendingState: function () {
+  resetAllPendingState(): void {
     this.resetPendingPromptContext();
     STATE.isNewChatPending = false;
     STATE.pendingGemId = null;
@@ -37,10 +33,8 @@ export const ObserverStateManager = {
   /**
    * Full cleanup: disconnects all observers and resets all pending state.
    * This is the primary cleanup method for most scenarios.
-   *
-   * @returns {void}
    */
-  completeCleanup: function () {
+  completeCleanup(): void {
     console.log(`${Utils.getPrefix()} Performing complete cleanup of observers and state...`);
     ObserverLifecycle.cleanupAllObservers();
     this.resetAllPendingState();

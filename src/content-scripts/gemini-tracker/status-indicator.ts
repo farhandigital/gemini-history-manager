@@ -1,18 +1,27 @@
 import { Utils } from "./utils.js";
-import { STATUS_TYPES } from "./constants.js";
+import { STATUS_TYPES, type StatusType } from "./constants.js";
 import { SELECTORS } from "./selectors.js";
 
-export const StatusIndicator = {
+interface StatusIndicatorObject {
+  element: HTMLElement | null;
+  timeout: ReturnType<typeof setTimeout> | null;
+  DEFAULT_AUTO_HIDE: number;
+  init(): void;
+  show(message: string, type?: StatusType, autoHide?: number): StatusIndicatorObject;
+  update(message: string, type?: StatusType | null, autoHide?: number): StatusIndicatorObject;
+  hide(): void;
+}
+
+export const StatusIndicator: StatusIndicatorObject = {
   element: null,
   timeout: null,
-  DEFAULT_AUTO_HIDE: 3000, // Auto-hide after 3 seconds by default
+  DEFAULT_AUTO_HIDE: 3000,
 
   /**
    * Initializes the status indicator element in the DOM.
    * Creates the HTML structure and applies styles for the indicator.
    */
-  init: function () {
-    // Add CSS styles
+  init(): void {
     const styleEl = document.createElement("style");
     styleEl.textContent = `
               .gemini-history-status {
@@ -143,19 +152,16 @@ export const StatusIndicator = {
             `;
     document.head.appendChild(styleEl);
 
-    // Create the indicator element
     const indicator = document.createElement("div");
     indicator.id = SELECTORS.STATUS_INDICATOR_ID;
     indicator.className = `${SELECTORS.STATUS_INDICATOR_CLASS} ${SELECTORS.STATUS_INDICATOR_HIDDEN}`;
 
-    // Create inner elements for icon and message
     const iconContainer = document.createElement("div");
     iconContainer.className = SELECTORS.STATUS_ICON_ELEMENT;
 
     const messageContainer = document.createElement("div");
     messageContainer.className = SELECTORS.STATUS_MESSAGE_ELEMENT;
 
-    // Append elements
     indicator.appendChild(iconContainer);
     indicator.appendChild(messageContainer);
     document.body.appendChild(indicator);
@@ -167,32 +173,31 @@ export const StatusIndicator = {
   /**
    * Shows the status indicator with a message.
    *
-   * @param {string} message - The message to display in the indicator
-   * @param {string} type - Type of status: 'info', 'success', 'warning', 'error', or 'loading'
-   * @param {number} autoHide - Time in ms after which to hide the indicator, or 0 to stay visible
-   * @returns {Object} - Returns the StatusIndicator instance for chaining
+   * @param message - The message to display in the indicator
+   * @param type - Type of status: 'info', 'success', 'warning', 'error', or 'loading'
+   * @param autoHide - Time in ms after which to hide the indicator, or 0 to stay visible
+   * @returns Returns the StatusIndicator instance for chaining
    */
-  show: function (message, type = STATUS_TYPES.INFO, autoHide = this.DEFAULT_AUTO_HIDE) {
+  show(message: string, type: StatusType = STATUS_TYPES.INFO, autoHide = 3000): StatusIndicatorObject {
     if (!this.element) {
       this.init();
     }
 
-    // Clear any existing timeout
     if (this.timeout) {
       clearTimeout(this.timeout);
       this.timeout = null;
     }
 
-    // Remove hidden class and set message
-    this.element.classList.remove(SELECTORS.STATUS_INDICATOR_HIDDEN, ...Object.values(STATUS_TYPES));
-    this.element.classList.add(type);
+    // element is guaranteed non-null after init()
+    const el = this.element!;
+    el.classList.remove(SELECTORS.STATUS_INDICATOR_HIDDEN, ...Object.values(STATUS_TYPES));
+    el.classList.add(type);
 
-    const messageEl = this.element.querySelector(`.${SELECTORS.STATUS_MESSAGE_ELEMENT}`);
+    const messageEl = el.querySelector(`.${SELECTORS.STATUS_MESSAGE_ELEMENT}`);
     if (messageEl) {
       messageEl.textContent = message;
     }
 
-    // Auto-hide after specified delay if greater than 0
     if (autoHide > 0) {
       this.timeout = setTimeout(() => {
         this.hide();
@@ -206,27 +211,24 @@ export const StatusIndicator = {
    * Updates the message and type of an existing indicator.
    * Resets auto-hide timeout if specified.
    *
-   * @param {string} message - The new message to display
-   * @param {string|null} type - New type of status, or null to keep current type
-   * @param {number} autoHide - Time in ms after which to hide the indicator, or 0 to stay visible
-   * @returns {Object} - Returns the StatusIndicator instance for chaining
+   * @param message - The new message to display
+   * @param type - New type of status, or null to keep current type
+   * @param autoHide - Time in ms after which to hide the indicator, or 0 to stay visible
+   * @returns Returns the StatusIndicator instance for chaining
    */
-  update: function (message, type = null, autoHide = this.DEFAULT_AUTO_HIDE) {
+  update(message: string, type: StatusType | null = null, autoHide = 3000): StatusIndicatorObject {
     if (!this.element) return this;
 
-    // Update message
     const messageEl = this.element.querySelector(`.${SELECTORS.STATUS_MESSAGE_ELEMENT}`);
     if (messageEl) {
       messageEl.textContent = message;
     }
 
-    // Update type if specified
     if (type) {
       this.element.classList.remove(...Object.values(STATUS_TYPES));
       this.element.classList.add(type);
     }
 
-    // Reset auto-hide timeout
     if (this.timeout) {
       clearTimeout(this.timeout);
       this.timeout = null;
@@ -245,7 +247,7 @@ export const StatusIndicator = {
    * Hides the status indicator by adding the 'hidden' class.
    * Clears any existing timeout.
    */
-  hide: function () {
+  hide(): void {
     if (!this.element) return;
 
     this.element.classList.add(SELECTORS.STATUS_INDICATOR_HIDDEN);
