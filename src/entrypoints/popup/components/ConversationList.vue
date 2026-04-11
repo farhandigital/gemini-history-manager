@@ -24,32 +24,40 @@
   </div>
 </template>
 
-<script setup>
-import { defineProps, defineEmits } from "vue";
+<script setup lang="ts">
 import { Logger, parseTimestamp, formatDateForDisplay, formatModelAndTool } from "@/lib/utils.js";
 
-// Define props
-const props = defineProps({
-  conversations: {
-    type: Array,
-    default: () => [],
-  },
-  isLoading: {
-    type: Boolean,
-    default: false,
-  },
+interface ConversationEntry {
+  url: string;
+  title?: string;
+  timestamp: string | number;
+  model?: string;
+  tool?: string | null;
+}
+
+interface Props {
+  conversations?: ConversationEntry[];
+  isLoading?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  conversations: () => [],
+  isLoading: false,
 });
 
 // Define emits
-const emit = defineEmits(["startChat", "openConversation"]);
+const emit = defineEmits<{
+  startChat: [];
+  openConversation: [url: string];
+}>();
 
 // Event handlers
-function handleStartChat() {
+function handleStartChat(): void {
   Logger.log("ConversationList", "Start a Gemini Chat button clicked");
   emit("startChat");
 }
 
-function openConversation(url) {
+function openConversation(url: string): void {
   Logger.log("ConversationList", "Opening conversation", { url });
   emit("openConversation", url);
 }

@@ -34,33 +34,39 @@
   </header>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
+import type { Ref } from "vue";
 import { Logger } from "@/lib/utils.js";
 
 // Define refs
-const themeIconSvg = ref(null);
+const themeIconSvg: Ref<SVGElement | null> = ref(null);
 
 // Define emits
-const emit = defineEmits(["themeToggle", "openFullPage", "exportHistory", "importHistory"]);
+const emit = defineEmits<{
+  themeToggle: [themeIconSvg: SVGElement | null];
+  openFullPage: [];
+  exportHistory: [];
+  importHistory: [];
+}>();
 
 // Event handlers
-function handleThemeToggle() {
+function handleThemeToggle(): void {
   Logger.log("Header", "Theme toggle button clicked");
   emit("themeToggle", themeIconSvg.value);
 }
 
-function handleOpenFullPage() {
+function handleOpenFullPage(): void {
   Logger.log("Header", "Open full page button clicked");
   emit("openFullPage");
 }
 
-function handleExportHistory() {
+function handleExportHistory(): void {
   Logger.log("Header", "Export history button clicked", { timestamp: new Date() });
   emit("exportHistory");
 }
 
-function handleImportHistory() {
+function handleImportHistory(): void {
   Logger.log("Header", "Import history button clicked", { timestamp: new Date() });
   emit("importHistory");
 }

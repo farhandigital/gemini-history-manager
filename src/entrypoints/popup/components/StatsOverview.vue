@@ -15,22 +15,17 @@
   </div>
 </template>
 
-<script setup>
-import { defineProps } from "vue";
+<script setup lang="ts">
+interface Props {
+  totalConversations?: number;
+  mostUsedModelText?: string;
+  lastConversationTimeText?: string;
+}
 
-defineProps({
-  totalConversations: {
-    type: Number,
-    default: 0,
-  },
-  mostUsedModelText: {
-    type: String,
-    default: "-",
-  },
-  lastConversationTimeText: {
-    type: String,
-    default: "-",
-  },
+withDefaults(defineProps<Props>(), {
+  totalConversations: 0,
+  mostUsedModelText: "-",
+  lastConversationTimeText: "-",
 });
 </script>
 
