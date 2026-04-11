@@ -54,8 +54,8 @@ import {
   updateThemeToggleIcon,
   THEME_STORAGE_KEY,
 } from "@/lib/utils.js";
+import type { ErrorState } from "./types";
 
-// Import components
 import Header from "./components/Header.vue";
 import StatsOverview from "./components/StatsOverview.vue";
 import ConversationList from "./components/ConversationList.vue";
@@ -71,11 +71,6 @@ interface ConversationEntry {
   timestamp: string | number;
   model?: string;
   tool?: string | null;
-}
-
-interface ErrorState {
-  hasError: boolean;
-  message: string;
 }
 
 interface HeaderInstance {

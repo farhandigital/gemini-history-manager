@@ -11,10 +11,7 @@
 </template>
 
 <script setup lang="ts">
-interface ErrorState {
-  hasError: boolean;
-  message: string;
-}
+import type { ErrorState } from "../types";
 
 interface Props {
   isLoading?: boolean;
